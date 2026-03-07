@@ -2,6 +2,8 @@ import json
 import logging
 from anthropic import AsyncAnthropic
 import config
+from analysis.trends import TrendReport
+from analysis.heuristics import Diagnosis
 
 logger = logging.getLogger(__name__)
 
@@ -43,8 +45,8 @@ def _clamp_adjustments(adjustments: list) -> list:
 
 
 async def generate_recommendation(
-    trend_report,
-    diagnosis,
+    trend_report: TrendReport,
+    diagnosis: Diagnosis,
     recent_shots: list,
     current_profile: dict,
 ) -> dict:
@@ -56,6 +58,7 @@ async def generate_recommendation(
             "n_shots": trend_report.n_shots,
             "score_vs_ratio": trend_report.score_vs_ratio,
             "score_vs_grind": trend_report.score_vs_grind,
+            "score_vs_dose": trend_report.score_vs_dose,
             "duration_stddev": trend_report.duration_stddev,
         },
         "diagnosis": {

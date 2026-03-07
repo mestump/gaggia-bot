@@ -52,18 +52,17 @@ async def compute_trends(bean_name: str, n_shots: int = 20) -> TrendReport:
             insufficient_data=True,
         )
 
-    scores = [r["flavor_score"] for r in rows]
-    ratios = [r["brew_ratio"] for r in rows if r["brew_ratio"] is not None]
-    grinds = [r["grind_size"] for r in rows if r["grind_size"] is not None]
-    doses = [r["dose_g"] for r in rows if r["dose_g"] is not None]
-    durations = [r["duration_s"] for r in rows if r["duration_s"] is not None]
+    ratio_pairs = [(r["brew_ratio"], r["flavor_score"]) for r in rows if r["brew_ratio"] is not None]
+    grind_pairs = [(r["grind_size"], r["flavor_score"]) for r in rows if r["grind_size"] is not None]
+    dose_pairs = [(r["dose_g"], r["flavor_score"]) for r in rows if r["dose_g"] is not None]
+    duration_vals = [r["duration_s"] for r in rows if r["duration_s"] is not None]
 
     return TrendReport(
         bean_name=bean_name,
         n_shots=len(rows),
-        score_vs_ratio=_pearson(ratios, scores[:len(ratios)]) if ratios else None,
-        score_vs_grind=_pearson(grinds, scores[:len(grinds)]) if grinds else None,
-        score_vs_dose=_pearson(doses, scores[:len(doses)]) if doses else None,
-        duration_stddev=float(np.std(durations)) if durations else None,
-        staleness_slope=None,
+        score_vs_ratio=_pearson([p[0] for p in ratio_pairs], [p[1] for p in ratio_pairs]) if ratio_pairs else None,
+        score_vs_grind=_pearson([p[0] for p in grind_pairs], [p[1] for p in grind_pairs]) if grind_pairs else None,
+        score_vs_dose=_pearson([p[0] for p in dose_pairs], [p[1] for p in dose_pairs]) if dose_pairs else None,
+        duration_stddev=float(np.std(duration_vals)) if duration_vals else None,
+        staleness_slope=None,  # TODO: compute score change per day since roast_date
     )
