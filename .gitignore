@@ -1,5 +1,6 @@
 .env
-data/gaggia.db
+data/*.db
+data/*.log
 data/graphs/*.png
 __pycache__/
 *.pyc

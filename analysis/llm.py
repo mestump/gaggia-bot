@@ -78,8 +78,9 @@ async def generate_recommendation(
             messages=[{"role": "user", "content": user_content}],
         )
         result = json.loads(response.content[0].text)
-        result["adjustments"] = _clamp_adjustments(result.get("adjustments", []))
-        return result
+        prose = result.get("prose", "")
+        adjustments = _clamp_adjustments(result.get("adjustments", []))
+        return {"prose": prose, "adjustments": adjustments}
     except Exception as e:
         logger.error("LLM recommendation failed: %s", e)
         return {

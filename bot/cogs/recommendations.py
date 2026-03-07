@@ -82,12 +82,18 @@ class Recommendations(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
         self.rec_queue: asyncio.Queue = asyncio.Queue()
+        self._task: asyncio.Task | None = None
 
     async def cog_load(self):
         self._task = asyncio.create_task(self._process_recs())
 
     async def cog_unload(self):
-        self._task.cancel()
+        if hasattr(self, "_task") and self._task:
+            self._task.cancel()
+            try:
+                await self._task
+            except asyncio.CancelledError:
+                pass
 
     async def enqueue_recommendation(
         self, shot_id: str, bean_name: str, last_shot: dict, profile: dict

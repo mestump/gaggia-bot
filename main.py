@@ -29,6 +29,57 @@ async def run():
     bot = create_bot()
     await load_cogs(bot)
 
+    # Wire feedback callback: alerts → recommendations
+    alerts_cog = bot.get_cog("Alerts")
+    recs_cog = bot.get_cog("Recommendations")
+
+    async def on_feedback_saved(shot_id: str):
+        """Called after feedback is saved — fetches context and enqueues recommendation."""
+        try:
+            async with db.get_db() as conn:
+                # Get shot data
+                async with conn.execute(
+                    "SELECT id, duration_s, profile_name, timestamp FROM shots WHERE id=?",
+                    (shot_id,)
+                ) as cur:
+                    shot_row = await cur.fetchone()
+                # Get feedback for bean_name
+                async with conn.execute(
+                    "SELECT bean_name FROM feedback WHERE shot_id=?",
+                    (shot_id,)
+                ) as cur:
+                    fb_row = await cur.fetchone()
+
+            if not shot_row or not fb_row or not fb_row["bean_name"]:
+                logger.debug("Skipping recommendation: missing shot or feedback for %s", shot_id)
+                return
+
+            last_shot = dict(shot_row)
+            bean_name = fb_row["bean_name"]
+
+            # Fetch current device profile (best-effort, empty dict on failure)
+            profile = {}
+            try:
+                async with aiohttp.ClientSession() as session:
+                    async with session.get(
+                        f"http://{config.GAGGIA_IP}/api/profile",
+                        timeout=aiohttp.ClientTimeout(total=5)
+                    ) as resp:
+                        if resp.status == 200:
+                            profile = await resp.json()
+            except Exception:
+                pass  # profile stays {}
+
+            if recs_cog:
+                await recs_cog.enqueue_recommendation(shot_id, bean_name, last_shot, profile)
+        except Exception as e:
+            logger.error("on_feedback_saved failed for shot %s: %s", shot_id, e)
+
+    if alerts_cog and recs_cog:
+        alerts_cog.set_feedback_callback(on_feedback_saved)
+    else:
+        logger.warning("Could not wire feedback callback — alerts_cog=%s, recs_cog=%s", alerts_cog, recs_cog)
+
     async def on_new_shot(event: dict):
         alerts_cog = bot.get_cog("Alerts")
         if alerts_cog:

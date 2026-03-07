@@ -44,17 +44,36 @@ async def test_feedback_modal_on_submit_saves_to_db(tmp_path):
 
 
 @pytest.mark.asyncio
-async def test_feedback_modal_invalid_score():
-    """Invalid score values are caught."""
+async def test_feedback_modal_invalid_score_rejected(tmp_path):
+    """FeedbackModal.on_submit rejects scores outside 1-10."""
+    import db
+    db.DB_PATH = str(tmp_path / "test.db")
+    await db.init_db()
+
     from bot.cogs.alerts import FeedbackModal
-    modal = FeedbackModal("shot-123")
-    for bad in ["0", "11", "abc", "", "10.5"]:
-        try:
-            val = int(bad.strip())
-            valid = 1 <= val <= 10
-        except (ValueError, TypeError):
-            valid = False
-        assert not valid or bad == "10"  # 10 is valid
+    modal = FeedbackModal("shot-999")
+    modal.flavor_score = MagicMock(value="0")  # invalid
+    modal.flavor_notes = MagicMock(value="")
+    modal.bean_name = MagicMock(value="")
+    modal.roaster = MagicMock(value="")
+    modal.grind_dose_yield = MagicMock(value="")
+
+    interaction = AsyncMock()
+    interaction.response = AsyncMock()
+    interaction.followup = AsyncMock()
+
+    await modal.on_submit(interaction)
+
+    # Should have sent an error, not saved to DB
+    interaction.followup.send.assert_called_once()
+    error_msg = interaction.followup.send.call_args[0][0]
+    assert "1" in error_msg and "10" in error_msg  # mentions the valid range
+
+    # Nothing saved to DB
+    async with db.get_db() as conn:
+        async with conn.execute("SELECT COUNT(*) FROM feedback WHERE shot_id='shot-999'") as cur:
+            count = (await cur.fetchone())[0]
+    assert count == 0
 
 
 @pytest.mark.asyncio

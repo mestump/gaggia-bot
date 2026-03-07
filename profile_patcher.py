@@ -6,8 +6,6 @@ import config
 
 logger = logging.getLogger(__name__)
 
-_PROFILE_URL = f"http://{config.GAGGIA_IP}/api/profile"
-
 
 async def patch_profile(adjustments: list) -> dict:
     """Apply adjustments to device profile with snapshot and verification.
@@ -22,9 +20,10 @@ async def patch_profile(adjustments: list) -> dict:
     Returns:
         dict with keys success (bool) and profile (the verified profile dict).
     """
+    profile_url = f"http://{config.GAGGIA_IP}/api/profile"
     async with aiohttp.ClientSession() as session:
         # Snapshot current profile
-        async with session.get(_PROFILE_URL) as resp:
+        async with session.get(profile_url) as resp:
             resp.raise_for_status()
             current = await resp.json()
 
@@ -44,10 +43,10 @@ async def patch_profile(adjustments: list) -> dict:
                 step[adj["field"]] = adj["new_value"]
 
         # PUT and verify
-        async with session.put(_PROFILE_URL, json=patched) as resp:
+        async with session.put(profile_url, json=patched) as resp:
             resp.raise_for_status()
 
-        async with session.get(_PROFILE_URL) as resp:
+        async with session.get(profile_url) as resp:
             resp.raise_for_status()
             verified = await resp.json()
 
