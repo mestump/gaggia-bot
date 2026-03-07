@@ -55,13 +55,14 @@ class Commands(commands.Cog):
     @app_commands.command(name="set_channel", description="Set the channel for shot alerts")
     @app_commands.checks.has_permissions(manage_channels=True)
     async def set_channel(self, interaction: discord.Interaction, channel: discord.TextChannel):
+        await interaction.response.defer(ephemeral=True)
         async with db.get_db() as conn:
             await conn.execute(
                 "INSERT OR REPLACE INTO config (key, value) VALUES ('alert_channel_id', ?)",
                 (str(channel.id),)
             )
             await conn.commit()
-        await interaction.response.send_message(
+        await interaction.followup.send(
             f"Shot alerts will be posted to {channel.mention}", ephemeral=True
         )
 
