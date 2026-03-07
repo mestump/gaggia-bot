@@ -1,0 +1,10 @@
+.env
+data/gaggia.db
+data/graphs/*.png
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+*.egg-info/
+.pytest_cache/
