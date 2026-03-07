@@ -46,24 +46,23 @@ async def run():
     for sig in (signal.SIGTERM, signal.SIGINT):
         loop.add_signal_handler(sig, handle_signal)
 
-    async with aiohttp.ClientSession():
-        poller_task = asyncio.create_task(poller.run())
-        bot_task = asyncio.create_task(bot.start(config.DISCORD_BOT_TOKEN))
-        stop_task = asyncio.create_task(stop_event.wait())
+    poller_task = asyncio.create_task(poller.run())
+    bot_task = asyncio.create_task(bot.start(config.DISCORD_BOT_TOKEN))
+    stop_task = asyncio.create_task(stop_event.wait())
 
-        done, pending = await asyncio.wait(
-            [poller_task, bot_task, stop_task],
-            return_when=asyncio.FIRST_COMPLETED,
-        )
+    done, pending = await asyncio.wait(
+        [poller_task, bot_task, stop_task],
+        return_when=asyncio.FIRST_COMPLETED,
+    )
 
-        poller.stop()
-        await bot.close()
-        for task in pending:
-            task.cancel()
-            try:
-                await task
-            except (asyncio.CancelledError, Exception):
-                pass
+    poller.stop()
+    await bot.close()
+    for task in pending:
+        task.cancel()
+        try:
+            await task
+        except (asyncio.CancelledError, Exception):
+            pass
 
     logger.info("GaggiaMate bot shut down cleanly.")
 
