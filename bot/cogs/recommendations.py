@@ -6,7 +6,11 @@ import discord
 from discord import ui
 from discord.ext import commands
 
+import config
 import db
+from analysis.trends import compute_trends
+from analysis.heuristics import diagnose_shot
+from analysis.llm import generate_recommendation
 from bot.embeds import recommendation_embed
 from profile_patcher import patch_profile
 
@@ -98,12 +102,10 @@ class Recommendations(commands.Cog):
                 await self._generate_and_post(shot_id, bean_name, last_shot, profile)
             except Exception as e:
                 logger.error("Recommendation processing failed: %s", e)
+            finally:
+                self.rec_queue.task_done()
 
     async def _generate_and_post(self, shot_id, bean_name, last_shot, profile):
-        from analysis.trends import compute_trends
-        from analysis.heuristics import diagnose_shot
-        from analysis.llm import generate_recommendation
-
         trend = await compute_trends(bean_name)
         if trend.insufficient_data:
             return  # not enough shots yet
@@ -116,6 +118,7 @@ class Recommendations(commands.Cog):
                 fb_row = await cur.fetchone()
 
         if not fb_row:
+            logger.warning("No feedback found for shot %s, skipping recommendation", shot_id)
             return
 
         diagnosis = diagnose_shot(last_shot, dict(fb_row))
@@ -134,7 +137,7 @@ class Recommendations(commands.Cog):
                 "SELECT value FROM config WHERE key='alert_channel_id'"
             ) as c:
                 row = await c.fetchone()
-        ch_id = int(row["value"]) if row else 0
+        ch_id = int(row["value"]) if row else (config.DISCORD_ALERT_CHANNEL_ID or 0)
         channel = self.bot.get_channel(ch_id)
         if not channel:
             return

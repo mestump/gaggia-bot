@@ -51,5 +51,12 @@ async def patch_profile(adjustments: list) -> dict:
             resp.raise_for_status()
             verified = await resp.json()
 
+        if verified.get("name") != current.get("name"):
+            logger.warning(
+                "Profile name mismatch after patch: expected %s, got %s",
+                current.get("name"),
+                verified.get("name"),
+            )
+
         logger.info("Profile patched and verified: %s", verified.get("name"))
         return {"success": True, "profile": verified}

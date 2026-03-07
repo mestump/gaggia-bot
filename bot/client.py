@@ -27,6 +27,6 @@ def create_bot() -> commands.Bot:
 async def load_cogs(bot: commands.Bot):
     """Load all cogs. Call this before bot.start()."""
     await bot.load_extension("bot.cogs.commands")
+    await bot.load_extension("bot.cogs.alerts")
     # Additional cogs loaded here as they are built:
-    # await bot.load_extension("bot.cogs.alerts")
-    # await bot.load_extension("bot.cogs.recommendations")
+    await bot.load_extension("bot.cogs.recommendations")
