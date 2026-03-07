@@ -1,0 +1,14 @@
+{
+  "id": "test-shot-001",
+  "timestamp": "2026-03-07T08:22:00",
+  "duration_s": 28.0,
+  "profile_name": "Trieste v2",
+  "datapoints": [
+    {"t_ms": 0,    "t_s": 0.0,  "temp_c": 93.0, "pressure_bar": 0.0, "flow_mls": 0.0, "weight_g": 0.0},
+    {"t_ms": 2000, "t_s": 2.0,  "temp_c": 93.1, "pressure_bar": 1.5, "flow_mls": 0.5, "weight_g": 0.5},
+    {"t_ms": 8000, "t_s": 8.0,  "temp_c": 93.2, "pressure_bar": 4.0, "flow_mls": 1.2, "weight_g": 5.0},
+    {"t_ms": 15000,"t_s": 15.0, "temp_c": 93.0, "pressure_bar": 9.0, "flow_mls": 2.1, "weight_g": 15.0},
+    {"t_ms": 22000,"t_s": 22.0, "temp_c": 92.9, "pressure_bar": 8.5, "flow_mls": 1.9, "weight_g": 25.0},
+    {"t_ms": 28000,"t_s": 28.0, "temp_c": 92.8, "pressure_bar": 7.0, "flow_mls": 1.5, "weight_g": 36.0}
+  ]
+}
