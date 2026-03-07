@@ -78,7 +78,7 @@ def make_slog_binary(samples: list[dict]) -> bytes:
       magic (4s), version (u16), profile_name (char[64]), pad to 512
     Sample: 26 bytes each (all u16 LE except t which is u32 LE)
       t(u32), tt(u16), ct(u16), tp(u16), cp(u16), fl(u16), tf(u16),
-      pf(u16), vf(u16), v(u16), ev(u16), pr(u16), systemInfo(u16)
+      pf(u16), vf(u16), v(u16), ev(u16), pr(u16)
     """
     profile_name_bytes = b"Test Profile\x00".ljust(64, b"\x00")
     header = b"SHOT" + struct.pack("<H", 5) + profile_name_bytes
@@ -88,7 +88,7 @@ def make_slog_binary(samples: list[dict]) -> bytes:
     body = b""
     for s in samples:
         sample = struct.pack(
-            "<IHHHHHHHHHHHH",
+            "<IHHHHHHHHHHH",
             s.get("t", 0),              # u32 ms
             s.get("tt", 930),           # u16 target temp ×10
             s.get("ct", 930),           # u16 current temp ×10
@@ -101,9 +101,8 @@ def make_slog_binary(samples: list[dict]) -> bytes:
             s.get("v", 100),            # u16 volume ×10
             s.get("ev", 100),           # u16 estimated volume ×10
             s.get("pr", 50),            # u16 pump ratio ×100
-            s.get("si", 0),             # u16 systemInfo
         )
-        assert len(sample) == 28, f"Sample is {len(sample)} bytes, expected 28"
+        assert len(sample) == 26, f"Sample is {len(sample)} bytes, expected 26"
         body += sample
 
     return header + body

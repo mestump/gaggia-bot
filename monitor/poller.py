@@ -39,6 +39,7 @@ class ShotPoller:
         self.reconnect_delay = reconnect_delay
         self._running = False
         self._client = GaggiaMateClient(host)
+        self._fetch_lock = asyncio.Lock()
 
     # ── Public API ─────────────────────────────────────────────────────────────
 
@@ -74,7 +75,6 @@ class ShotPoller:
         Handles both process.e detection and fallback m=1→m=0.
         """
         prev_mode: Optional[int] = None
-        had_process_field = False  # track whether current/prev message had process field
 
         async for msg in ws:
             # Support both aiohttp WSMessage objects and plain strings (for tests)
@@ -95,7 +95,6 @@ class ShotPoller:
 
             if has_process:
                 # Primary detection: process.e flag
-                had_process_field = True
                 if process.get("e", False):
                     shot_ended = True
                     logger.info("Shot ended (process.e=True)")
@@ -119,31 +118,32 @@ class ShotPoller:
         Fetch SIDX index, find IDs not in DB, fetch + save each.
         Returns list of newly saved shot dicts.
         """
-        try:
-            async with aiohttp.ClientSession() as session:
-                index = await self._client.get_shot_index(session)
-                known_ids = await self._get_known_ids()
+        async with self._fetch_lock:
+            try:
+                async with aiohttp.ClientSession() as session:
+                    index = await self._client.get_shot_index(session)
+                    known_ids = await self._get_known_ids()
 
-                new_shots = []
-                for entry in index:
-                    if entry["id"] in known_ids:
-                        continue
-                    if entry["flags"]["deleted"]:
-                        continue
-                    try:
-                        shot = await self._client.get_shot(session, entry["id"])
-                        # Fill in timestamp from index if not in slog header
-                        shot.setdefault("timestamp", entry["timestamp"])
-                        await self._save_shot(shot)
-                        new_shots.append(shot)
-                        logger.info("Saved new shot id=%d profile=%s", shot["id"], shot.get("profile_name"))
-                    except Exception as exc:
-                        logger.error("Failed to fetch/save shot %d: %s", entry["id"], exc, exc_info=True)
+                    new_shots = []
+                    for entry in index:
+                        if entry["id"] in known_ids:
+                            continue
+                        if entry["flags"]["deleted"]:
+                            continue
+                        try:
+                            shot = await self._client.get_shot(session, entry["id"])
+                            # Fill in timestamp from index if not in slog header
+                            shot.setdefault("timestamp", entry["timestamp"])
+                            await self._save_shot(shot)
+                            new_shots.append(shot)
+                            logger.info("Saved new shot id=%d profile=%s", shot["id"], shot.get("profile_name"))
+                        except Exception as exc:
+                            logger.error("Failed to fetch/save shot %d: %s", entry["id"], exc, exc_info=True)
 
-                return new_shots
-        except Exception as exc:
-            logger.error("_fetch_new_shots failed: %s", exc, exc_info=True)
-            return []
+                    return new_shots
+            except Exception as exc:
+                logger.error("_fetch_new_shots failed: %s", exc, exc_info=True)
+                return []
 
     # ── DB helpers ────────────────────────────────────────────────────────────
 
@@ -156,15 +156,13 @@ class ShotPoller:
 
     async def _save_shot(self, shot_data: dict) -> None:
         """Insert a shot into the shots table (ignore duplicates)."""
-        import json as json_mod
-
         ts = shot_data.get("timestamp")
         if isinstance(ts, datetime):
             ts_str = ts.isoformat()
         else:
             ts_str = str(ts) if ts else datetime.now(tz=timezone.utc).isoformat()
 
-        raw_json = json_mod.dumps({
+        raw_json = json.dumps({
             "datapoints": shot_data.get("datapoints", []),
         }, default=str)
 

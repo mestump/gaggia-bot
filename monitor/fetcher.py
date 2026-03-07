@@ -8,7 +8,7 @@ Binary formats:
 
   SLOG header: 512 bytes (magic SHOT u32, version u16, profile_name char[64], pad)
   SLOG sample: 26 bytes  (t u32, tt u16, ct u16, tp u16, cp u16, fl u16, tf u16,
-                           pf u16, vf u16, v u16, ev u16, pr u16, systemInfo u16)
+                           pf u16, vf u16, v u16, ev u16, pr u16)
 """
 
 import asyncio
@@ -41,8 +41,8 @@ _SIDX_HEADER_FMT = "<4sII20s"
 # ── SLOG constants ────────────────────────────────────────────────────────────
 _SLOG_MAGIC = b"SHOT"
 _SLOG_HEADER_SIZE = 512
-_SLOG_SAMPLE_SIZE = 28   # t(u32) + 12×u16 = 4 + 24 = 28 bytes
-_SLOG_SAMPLE_FMT = "<IHHHHHHHHHHHH"   # t(u32) + 12×u16
+_SLOG_SAMPLE_SIZE = 26   # t(u32) + 11×u16 = 4 + 22 = 26 bytes
+_SLOG_SAMPLE_FMT = "<IHHHHHHHHHHH"   # t(u32) + 11×u16
 
 
 def _null_str(b: bytes) -> str:
@@ -111,7 +111,7 @@ class GaggiaMateClient:
         datapoints = []
         for i in range(num_samples):
             offset = _SLOG_HEADER_SIZE + i * _SLOG_SAMPLE_SIZE
-            (t, tt, ct, tp, cp, fl, tf, pf, vf, v, ev, pr_ratio, sys_info) = struct.unpack_from(
+            (t, tt, ct, tp, cp, fl, tf, pf, vf, v, ev, pr_ratio) = struct.unpack_from(
                 _SLOG_SAMPLE_FMT, data, offset
             )
             datapoints.append({
