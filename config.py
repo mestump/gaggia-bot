@@ -11,7 +11,8 @@ def _require(key: str) -> str:
 
 DISCORD_BOT_TOKEN = _require("DISCORD_BOT_TOKEN")
 DISCORD_GUILD_ID = int(_require("DISCORD_GUILD_ID"))
-DISCORD_ALERT_CHANNEL_ID = int(os.getenv("DISCORD_ALERT_CHANNEL_ID", "0"))
+_alert_ch = os.getenv("DISCORD_ALERT_CHANNEL_ID", "")
+DISCORD_ALERT_CHANNEL_ID = int(_alert_ch) if _alert_ch.strip() else 0
 GAGGIA_IP = os.getenv("GAGGIA_IP", "192.168.4.253")
 GAGGIA_POLL_INTERVAL = int(os.getenv("GAGGIA_POLL_INTERVAL", "15"))
 ANTHROPIC_API_KEY = _require("ANTHROPIC_API_KEY")

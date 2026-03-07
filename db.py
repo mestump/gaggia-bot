@@ -1,5 +1,6 @@
 import aiosqlite
 import os
+from contextlib import asynccontextmanager
 from config import DB_PATH
 
 SCHEMA = """
@@ -58,7 +59,12 @@ async def init_db():
         await db.executescript(SCHEMA)
         await db.commit()
 
-async def get_db() -> aiosqlite.Connection:
+@asynccontextmanager
+async def get_db():
+    """Async context manager for DB connections. Use as: async with get_db() as db:"""
     db = await aiosqlite.connect(DB_PATH)
     db.row_factory = aiosqlite.Row
-    return db
+    try:
+        yield db
+    finally:
+        await db.close()
