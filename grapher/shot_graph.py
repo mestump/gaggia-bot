@@ -34,7 +34,8 @@ def generate_shot_graph(
     output_dir = Path(output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    shot_id = shot_data.get("id", "unknown")
+    shot_id = shot_data.get("id") or "unknown"
+    shot_id = str(shot_id).replace("/", "_").replace("\\", "_")  # filesystem-safe
     profile_name = shot_data.get("profile_name", "")
     timestamp = shot_data.get("timestamp", "")
     duration_s = shot_data.get("duration_s", 0)
@@ -45,11 +46,11 @@ def generate_shot_graph(
     title = f"{profile_name} — {ts_display} — {duration_s}s"
 
     # Extract series
-    t = [dp["t_s"] for dp in datapoints]
-    pressure = [dp["pressure_bar"] for dp in datapoints]
-    flow = [dp["flow_mls"] for dp in datapoints]
-    temp = [dp["temp_c"] for dp in datapoints]
-    weight = [dp["weight_g"] for dp in datapoints]
+    t      = [dp.get("t_s", 0.0) for dp in datapoints]
+    pressure = [dp.get("pressure_bar", 0.0) for dp in datapoints]
+    flow   = [dp.get("flow_mls", 0.0) for dp in datapoints]
+    temp   = [dp.get("temp_c", 0.0) for dp in datapoints]
+    weight = [dp.get("weight_g", 0.0) for dp in datapoints]
     has_weight = any(w > 0 for w in weight)
 
     fig, axes = plt.subplots(3, 1, figsize=(12, 8), sharex=True)
@@ -112,7 +113,7 @@ def generate_shot_graph(
             fontsize=9, color="dimgray",
         )
 
-    plt.tight_layout(rect=[0, 0.04 if feedback else 0, 1, 1])
+    fig.tight_layout(rect=[0, 0.04 if feedback else 0, 1, 1])
 
     output_path = output_dir / f"{shot_id}.png"
     fig.savefig(output_path, dpi=150)
