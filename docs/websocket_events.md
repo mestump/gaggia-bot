@@ -1,6 +1,6 @@
 # GaggiaMate WebSocket Events
 
-**Endpoint:** `ws://192.168.4.253/ws`
+**Endpoint:** `ws://<device-ip>/ws`
 **Protocol:** JSON text frames
 **Observed:** 2026-03-07 (machine in Standby mode, ~39°C cold)
 
@@ -9,16 +9,16 @@
 All messages received during 10-second observation window. Machine was in standby (mode=0), cold start.
 
 ```json
-{"tp": "evt:status", "ct": 38.98, "tt": 0, "pr": 0.001, "fl": 0, "pt": 0, "m": 0, "p": "Lucy Adaptive", "puid": "3zT2ydcV9G", "cp": true, "cd": true, "tw": 38, "bta": 0, "bt": 0, "btd": 101, "led": false, "gtd": 24000, "gtv": 18, "gt": 0, "gact": 0, "bw": 0, "cw": 0, "bc": false}
-{"tp": "evt:status", "ct": 38.988, "tt": 0, "pr": 0, "fl": 0, "pt": 0, "m": 0, "p": "Lucy Adaptive", "puid": "3zT2ydcV9G", "cp": true, "cd": true, "tw": 38, "bta": 0, "bt": 0, "btd": 101, "led": false, "gtd": 24000, "gtv": 18, "gt": 0, "gact": 0, "bw": 0, "cw": 0, "bc": false}
-{"tp": "evt:status", "ct": 38.992, "tt": 0, "pr": 0.001, "fl": 0, "pt": 0, "m": 0, "p": "Lucy Adaptive", "puid": "3zT2ydcV9G", "cp": true, "cd": true, "tw": 38, "bta": 0, "bt": 0, "btd": 101, "led": false, "gtd": 24000, "gtv": 18, "gt": 0, "gact": 0, "bw": 0, "cw": 0, "bc": false}
-{"tp": "evt:status", "ct": 38.995, "tt": 0, "pr": 0, "fl": 0, "pt": 0, "m": 0, "p": "Lucy Adaptive", "puid": "3zT2ydcV9G", "cp": true, "cd": true, "tw": 38, "bta": 0, "bt": 0, "btd": 101, "led": false, "gtd": 24000, "gtv": 18, "gt": 0, "gact": 0, "bw": 0, "cw": 0, "bc": false}
-{"tp": "evt:status", "ct": 38.997, "tt": 0, "pr": 0, "fl": 0, "pt": 0, "m": 0, "p": "Lucy Adaptive", "puid": "3zT2ydcV9G", "cp": true, "cd": true, "tw": 38, "bta": 0, "bt": 0, "btd": 101, "led": false, "gtd": 24000, "gtv": 18, "gt": 0, "gact": 0, "bw": 0, "cw": 0, "bc": false}
-{"tp": "evt:status", "ct": 38.998, "tt": 0, "pr": 0.002, "fl": 0, "pt": 0, "m": 0, "p": "Lucy Adaptive", "puid": "3zT2ydcV9G", "cp": true, "cd": true, "tw": 38, "bta": 0, "bt": 0, "btd": 101, "led": false, "gtd": 24000, "gtv": 18, "gt": 0, "gact": 0, "bw": 0, "cw": 0, "bc": false}
-{"tp": "evt:status", "ct": 38.999, "tt": 0, "pr": 0, "fl": 0, "pt": 0, "m": 0, "p": "Lucy Adaptive", "puid": "3zT2ydcV9G", "cp": true, "cd": true, "tw": 38, "bta": 0, "bt": 0, "btd": 101, "led": false, "gtd": 24000, "gtv": 18, "gt": 0, "gact": 0, "bw": 0, "cw": 0, "bc": false}
-{"tp": "evt:status", "ct": 38.999, "tt": 0, "pr": 0.002, "fl": 0, "pt": 0, "m": 0, "p": "Lucy Adaptive", "puid": "3zT2ydcV9G", "cp": true, "cd": true, "tw": 38, "bta": 0, "bt": 0, "btd": 101, "led": false, "gtd": 24000, "gtv": 18, "gt": 0, "gact": 0, "bw": 0, "cw": 0, "bc": false}
-{"tp": "evt:status", "ct": 39, "tt": 0, "pr": 0, "fl": 0, "pt": 0, "m": 0, "p": "Lucy Adaptive", "puid": "3zT2ydcV9G", "cp": true, "cd": true, "tw": 38, "bta": 0, "bt": 0, "btd": 101, "led": false, "gtd": 24000, "gtv": 18, "gt": 0, "gact": 0, "bw": 0, "cw": 0, "bc": false}
-{"tp": "evt:status", "ct": 39, "tt": 0, "pr": 0, "fl": 0, "pt": 0, "m": 0, "p": "Lucy Adaptive", "puid": "3zT2ydcV9G", "cp": true, "cd": true, "tw": 38, "bta": 0, "bt": 0, "btd": 101, "led": false, "gtd": 24000, "gtv": 18, "gt": 0, "gact": 0, "bw": 0, "cw": 0, "bc": false}
+{"tp": "evt:status", "ct": 38.98, "tt": 0, "pr": 0.001, "fl": 0, "pt": 0, "m": 0, "p": "Example Profile", "puid": "XXXXXXXXXX", "cp": true, "cd": true, "tw": 38, "bta": 0, "bt": 0, "btd": 101, "led": false, "gtd": 24000, "gtv": 18, "gt": 0, "gact": 0, "bw": 0, "cw": 0, "bc": false}
+{"tp": "evt:status", "ct": 38.988, "tt": 0, "pr": 0, "fl": 0, "pt": 0, "m": 0, "p": "Example Profile", "puid": "XXXXXXXXXX", "cp": true, "cd": true, "tw": 38, "bta": 0, "bt": 0, "btd": 101, "led": false, "gtd": 24000, "gtv": 18, "gt": 0, "gact": 0, "bw": 0, "cw": 0, "bc": false}
+{"tp": "evt:status", "ct": 38.992, "tt": 0, "pr": 0.001, "fl": 0, "pt": 0, "m": 0, "p": "Example Profile", "puid": "XXXXXXXXXX", "cp": true, "cd": true, "tw": 38, "bta": 0, "bt": 0, "btd": 101, "led": false, "gtd": 24000, "gtv": 18, "gt": 0, "gact": 0, "bw": 0, "cw": 0, "bc": false}
+{"tp": "evt:status", "ct": 38.995, "tt": 0, "pr": 0, "fl": 0, "pt": 0, "m": 0, "p": "Example Profile", "puid": "XXXXXXXXXX", "cp": true, "cd": true, "tw": 38, "bta": 0, "bt": 0, "btd": 101, "led": false, "gtd": 24000, "gtv": 18, "gt": 0, "gact": 0, "bw": 0, "cw": 0, "bc": false}
+{"tp": "evt:status", "ct": 38.997, "tt": 0, "pr": 0, "fl": 0, "pt": 0, "m": 0, "p": "Example Profile", "puid": "XXXXXXXXXX", "cp": true, "cd": true, "tw": 38, "bta": 0, "bt": 0, "btd": 101, "led": false, "gtd": 24000, "gtv": 18, "gt": 0, "gact": 0, "bw": 0, "cw": 0, "bc": false}
+{"tp": "evt:status", "ct": 38.998, "tt": 0, "pr": 0.002, "fl": 0, "pt": 0, "m": 0, "p": "Example Profile", "puid": "XXXXXXXXXX", "cp": true, "cd": true, "tw": 38, "bta": 0, "bt": 0, "btd": 101, "led": false, "gtd": 24000, "gtv": 18, "gt": 0, "gact": 0, "bw": 0, "cw": 0, "bc": false}
+{"tp": "evt:status", "ct": 38.999, "tt": 0, "pr": 0, "fl": 0, "pt": 0, "m": 0, "p": "Example Profile", "puid": "XXXXXXXXXX", "cp": true, "cd": true, "tw": 38, "bta": 0, "bt": 0, "btd": 101, "led": false, "gtd": 24000, "gtv": 18, "gt": 0, "gact": 0, "bw": 0, "cw": 0, "bc": false}
+{"tp": "evt:status", "ct": 38.999, "tt": 0, "pr": 0.002, "fl": 0, "pt": 0, "m": 0, "p": "Example Profile", "puid": "XXXXXXXXXX", "cp": true, "cd": true, "tw": 38, "bta": 0, "bt": 0, "btd": 101, "led": false, "gtd": 24000, "gtv": 18, "gt": 0, "gact": 0, "bw": 0, "cw": 0, "bc": false}
+{"tp": "evt:status", "ct": 39, "tt": 0, "pr": 0, "fl": 0, "pt": 0, "m": 0, "p": "Example Profile", "puid": "XXXXXXXXXX", "cp": true, "cd": true, "tw": 38, "bta": 0, "bt": 0, "btd": 101, "led": false, "gtd": 24000, "gtv": 18, "gt": 0, "gact": 0, "bw": 0, "cw": 0, "bc": false}
+{"tp": "evt:status", "ct": 39, "tt": 0, "pr": 0, "fl": 0, "pt": 0, "m": 0, "p": "Example Profile", "puid": "XXXXXXXXXX", "cp": true, "cd": true, "tw": 38, "bta": 0, "bt": 0, "btd": 101, "led": false, "gtd": 24000, "gtv": 18, "gt": 0, "gact": 0, "bw": 0, "cw": 0, "bc": false}
 ```
 
 ## Field Reference
@@ -32,8 +32,8 @@ All messages received during 10-second observation window. Machine was in standb
 | `pt` | float | `0` | Target pressure (bar) |
 | `fl` | float | `0` | Current flow rate (ml/s) |
 | `m` | int | `0` | Machine mode (see below) |
-| `p` | string | `"Lucy Adaptive"` | Selected profile display name |
-| `puid` | string | `"3zT2ydcV9G"` | Selected profile ID (short key) |
+| `p` | string | `"Example Profile"` | Selected profile display name |
+| `puid` | string | `"XXXXXXXXXX"` | Selected profile ID (short key) |
 | `cp` | bool | `true` | Pressure sensor capability available |
 | `cd` | bool | `true` | Display dimming capability available |
 | `tw` | float | `38` | Target weight (g); 0 if unset |
@@ -79,7 +79,7 @@ When a shot is active, `evt:status` includes a `process` object:
 
 ## Shot Detection Strategy
 
-1. Subscribe to `ws://192.168.4.253/ws`
+1. Subscribe to `ws://<device-ip>/ws`
 2. Parse each `evt:status` message
 3. **Shot START:** `m` transitions to `1` (Brew) **or** `process.a` becomes `true`
 4. **Shot END:** `process.e` becomes `true` **or** `m` transitions back to `0` (Standby)

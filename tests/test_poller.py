@@ -3,6 +3,8 @@ Unit tests for monitor/poller.py — WebSocket shot detection.
 """
 import asyncio
 import json
+
+TEST_HOST = "192.168.1.100"
 from datetime import datetime, timezone
 from unittest.mock import AsyncMock, MagicMock, patch, call
 import pytest
@@ -85,7 +87,7 @@ class TestShotDetectedOnProcessEnd:
 
         ws = mock_ws_messages(messages)
 
-        poller = ShotPoller(host="192.168.4.253", on_shot=on_shot)
+        poller = ShotPoller(host=TEST_HOST, on_shot=on_shot)
 
         with patch.object(poller, "_fetch_new_shots", new_callable=AsyncMock) as mock_fetch:
             with patch.object(poller, "_get_known_ids", return_value={}) as mock_known:
@@ -115,7 +117,7 @@ class TestShotDetectedOnProcessEnd:
         ]
         ws = mock_ws_messages(messages)
 
-        poller = ShotPoller(host="192.168.4.253", on_shot=on_shot)
+        poller = ShotPoller(host=TEST_HOST, on_shot=on_shot)
 
         with patch.object(poller, "_fetch_new_shots", new_callable=AsyncMock) as mock_fetch:
             mock_fetch.return_value = [mock_shot]
@@ -138,7 +140,7 @@ class TestFallbackModeTransition:
         ]
         ws = mock_ws_messages(messages)
 
-        poller = ShotPoller(host="192.168.4.253", on_shot=on_shot)
+        poller = ShotPoller(host=TEST_HOST, on_shot=on_shot)
 
         with patch.object(poller, "_fetch_new_shots", new_callable=AsyncMock) as mock_fetch:
             mock_fetch.return_value = []
@@ -161,7 +163,7 @@ class TestFallbackModeTransition:
         ]
         ws = mock_ws_messages(messages)
 
-        poller = ShotPoller(host="192.168.4.253", on_shot=on_shot)
+        poller = ShotPoller(host=TEST_HOST, on_shot=on_shot)
 
         with patch.object(poller, "_fetch_new_shots", new_callable=AsyncMock) as mock_fetch:
             mock_fetch.return_value = []
@@ -186,7 +188,7 @@ class TestFallbackModeTransition:
         ]
         ws = mock_ws_messages(messages)
 
-        poller = ShotPoller(host="192.168.4.253", on_shot=on_shot)
+        poller = ShotPoller(host=TEST_HOST, on_shot=on_shot)
 
         with patch.object(poller, "_fetch_new_shots", new_callable=AsyncMock) as mock_fetch:
             mock_fetch.return_value = []
@@ -202,7 +204,7 @@ class TestGetKnownIds:
         """_get_known_ids should query DB and return a set of int IDs."""
         from monitor.poller import ShotPoller
 
-        poller = ShotPoller(host="192.168.4.253", on_shot=AsyncMock())
+        poller = ShotPoller(host=TEST_HOST, on_shot=AsyncMock())
 
         mock_db = AsyncMock()
         mock_cursor = AsyncMock()
@@ -224,7 +226,7 @@ class TestSaveShot:
         from monitor.poller import ShotPoller
         import json as json_mod
 
-        poller = ShotPoller(host="192.168.4.253", on_shot=AsyncMock())
+        poller = ShotPoller(host=TEST_HOST, on_shot=AsyncMock())
 
         shot_data = {
             "id": 99,

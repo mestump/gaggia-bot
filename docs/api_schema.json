@@ -1,6 +1,6 @@
 {
   "audit_date": "2026-03-07",
-  "device_ip": "192.168.4.253",
+  "device_ip": "<device-ip>",
   "auth": "none",
 
   "rest_endpoints": {
@@ -26,9 +26,9 @@
         "haIP": "",
         "haPort": 1883,
         "haTopic": "homeassistant",
-        "pid": "58.397,1.027,249.055,0",
+        "pid": "XX.XXX,X.XXX,XXX.XXX,0",
         "pumpModelCoeffs": "10.205,5.521",
-        "wifiSsid": "Plexinet",
+        "wifiSsid": "YourNetworkName",
         "mdnsName": "gaggimate",
         "temperatureOffset": "8",
         "pressureScaling": "16.00",
@@ -83,17 +83,17 @@
           "4:8": "timestamp u32 — unix epoch seconds",
           "8:12": "data_size u32 — size of .slog file in bytes",
           "12:16": "flags u32 — bit 0=completed, bit 1=deleted, bit 2=hasNotes",
-          "16:32": "profile_id char[16] — null-padded ASCII short ID (e.g. '3zT2ydcV9G')",
+          "16:32": "profile_id char[16] — null-padded ASCII short ID (e.g. 'XXXXXXXXXX')",
           "32:48": "unknown/padding",
-          "48:80": "profile_name char[32] — null-padded ASCII display name (e.g. 'Lucy Adaptive')",
+          "48:80": "profile_name char[32] — null-padded ASCII display name (e.g. 'Example Profile')",
           "80:128": "padding"
         },
         "volume_scale": 10,
         "volume_field_in_flags_u16_at_byte_12_13": "volume_raw / 10 = ml"
       },
       "sample_parsed_records": [
-        {"id": 0, "timestamp": 1771369229, "timestamp_human": "2026-02-17 18:00:29", "data_size": 44945, "profile_id": "adapt", "profile_name": "Adaptive v2"},
-        {"id": 51, "timestamp": 1772914899, "timestamp_human": "2026-03-07 15:21:39", "data_size": 48092, "profile_id": "3zT2ydcV9G", "profile_name": "Lucy Adaptive"}
+        {"id": 1, "timestamp": 1709827200, "timestamp_human": "2024-03-07 16:00:00", "data_size": 12345, "profile_id": "XXXXXXXXXX", "profile_name": "Example Profile"},
+        {"id": 2, "timestamp": 1709827200, "timestamp_human": "2024-03-07 16:00:00", "data_size": 12345, "profile_id": "XXXXXXXXXX", "profile_name": "Example Profile"}
       ],
       "total_shots_observed": 52
     },
@@ -148,11 +148,11 @@
         "fields_mask_v5_example": "0x00001fff (all 13 fields active)",
         "sample_interval_ms_observed": 250,
         "phases_observed": ["Prefill", "Fill", "Compressing", "Dripping", "Pressurize", "Extraction"],
-        "sample_shot_51_summary": {
+        "sample_shot_summary": {
           "version": 5,
-          "timestamp": "2026-03-07 15:21:39",
-          "profile_id": "3zT2ydcV9G",
-          "profile_name": "Lucy Adaptive",
+          "timestamp": "2024-03-07 16:00:00",
+          "profile_id": "XXXXXXXXXX",
+          "profile_name": "Example Profile",
           "sample_interval_ms": 250,
           "num_samples": 188,
           "duration_s": 46.75,
@@ -202,7 +202,7 @@
   },
 
   "websocket": {
-    "url": "ws://192.168.4.253/ws",
+    "url": "ws://<device-ip>/ws",
     "protocol": "JSON text frames",
     "direction": "bidirectional — device pushes evt:status at ~1Hz; client sends req:* commands",
     "event_type_field": "tp",
@@ -218,7 +218,7 @@
           "fl": "float — current flow rate (ml/s)",
           "m": "int — machine mode (0=Standby, 1=Brew, 2=Steam, 3=Water, 4=Grind)",
           "p": "string — selected profile display name",
-          "puid": "string — selected profile ID (short key e.g. '3zT2ydcV9G')",
+          "puid": "string — selected profile ID (short key e.g. 'XXXXXXXXXX')",
           "cp": "bool — pressure capability available",
           "cd": "bool — dimming capability available",
           "tw": "float — target weight (g, 0 if not set)",
@@ -243,8 +243,8 @@
           "fl": 0,
           "pt": 0,
           "m": 0,
-          "p": "Lucy Adaptive",
-          "puid": "3zT2ydcV9G",
+          "p": "Example Profile",
+          "puid": "XXXXXXXXXX",
           "cp": true,
           "cd": true,
           "tw": 38,

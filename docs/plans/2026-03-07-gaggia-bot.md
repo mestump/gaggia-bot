@@ -57,7 +57,7 @@ aiosqlite>=0.20.0
 DISCORD_BOT_TOKEN=
 DISCORD_GUILD_ID=
 DISCORD_ALERT_CHANNEL_ID=
-GAGGIA_IP=192.168.4.253
+GAGGIA_IP=<device-ip>
 GAGGIA_POLL_INTERVAL=15
 ANTHROPIC_API_KEY=
 DB_PATH=./data/gaggia.db
@@ -82,7 +82,7 @@ def _require(key: str) -> str:
 DISCORD_BOT_TOKEN = _require("DISCORD_BOT_TOKEN")
 DISCORD_GUILD_ID = int(_require("DISCORD_GUILD_ID"))
 DISCORD_ALERT_CHANNEL_ID = int(os.getenv("DISCORD_ALERT_CHANNEL_ID", "0"))
-GAGGIA_IP = os.getenv("GAGGIA_IP", "192.168.4.253")
+GAGGIA_IP = os.getenv("GAGGIA_IP", "<device-ip>")
 GAGGIA_POLL_INTERVAL = int(os.getenv("GAGGIA_POLL_INTERVAL", "15"))
 ANTHROPIC_API_KEY = _require("ANTHROPIC_API_KEY")
 DB_PATH = os.getenv("DB_PATH", "./data/gaggia.db")
@@ -225,7 +225,7 @@ if __name__ == "__main__":
 **Step 8: Install deps and verify**
 
 ```bash
-cd /home/michael/gaggia-bot
+cd ~/gaggia-bot
 python3 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
@@ -246,7 +246,7 @@ git commit -m "feat: project scaffold — config, db schema, directory structure
 
 ---
 
-## Task 2: API Audit (run on machine with network access to 192.168.4.253)
+## Task 2: API Audit (run on machine with network access to <device-ip>)
 
 **Files:**
 - Create: `docs/api_schema.json`
@@ -255,19 +255,19 @@ git commit -m "feat: project scaffold — config, db schema, directory structure
 **Step 1: Enumerate REST endpoints**
 
 ```bash
-curl -s http://192.168.4.253/api/ | python3 -m json.tool
-curl -s http://192.168.4.253/api/status | python3 -m json.tool
-curl -s http://192.168.4.253/api/history | python3 -m json.tool
-curl -s http://192.168.4.253/api/profile | python3 -m json.tool
-curl -s http://192.168.4.253/api/profiles | python3 -m json.tool
+curl -s http://<device-ip>/api/ | python3 -m json.tool
+curl -s http://<device-ip>/api/status | python3 -m json.tool
+curl -s http://<device-ip>/api/history | python3 -m json.tool
+curl -s http://<device-ip>/api/profile | python3 -m json.tool
+curl -s http://<device-ip>/api/profiles | python3 -m json.tool
 ```
 
 **Step 2: Capture one full shot history entry**
 
 ```bash
 # Get first shot ID from history list
-SHOT_ID=$(curl -s http://192.168.4.253/api/history | python3 -c "import sys,json; d=json.load(sys.stdin); print(d[0]['id'] if isinstance(d,list) else list(d.values())[0][0]['id'])")
-curl -s "http://192.168.4.253/api/history/$SHOT_ID" | python3 -m json.tool > docs/api_schema.json
+SHOT_ID=$(curl -s http://<device-ip>/api/history | python3 -c "import sys,json; d=json.load(sys.stdin); print(d[0]['id'] if isinstance(d,list) else list(d.values())[0][0]['id'])")
+curl -s "http://<device-ip>/api/history/$SHOT_ID" | python3 -m json.tool > docs/api_schema.json
 ```
 
 **Step 3: Test WebSocket connection**
@@ -278,7 +278,7 @@ import asyncio, aiohttp, json
 
 async def test_ws():
     async with aiohttp.ClientSession() as session:
-        async with session.ws_connect("ws://192.168.4.253/ws") as ws:
+        async with session.ws_connect("ws://<device-ip>/ws") as ws:
             print("Connected. Listening for 10 seconds...")
             async for msg in ws:
                 if msg.type == aiohttp.WSMsgType.TEXT:
@@ -331,7 +331,7 @@ from monitor.fetcher import GaggiaMateClient
 
 @pytest.mark.asyncio
 async def test_get_status_returns_dict():
-    client = GaggiaMateClient("192.168.4.253")
+    client = GaggiaMateClient("<device-ip>")
     mock_resp = AsyncMock()
     mock_resp.json = AsyncMock(return_value={"mode": "idle"})
     mock_resp.__aenter__ = AsyncMock(return_value=mock_resp)
@@ -343,7 +343,7 @@ async def test_get_status_returns_dict():
 
 @pytest.mark.asyncio
 async def test_get_history_returns_list():
-    client = GaggiaMateClient("192.168.4.253")
+    client = GaggiaMateClient("<device-ip>")
     mock_resp = AsyncMock()
     mock_resp.json = AsyncMock(return_value=[{"id": "abc", "timestamp": "2026-03-07T08:00:00"}])
     mock_resp.__aenter__ = AsyncMock(return_value=mock_resp)
@@ -542,7 +542,7 @@ from monitor.fetcher import GaggiaMateClient
 @pytest.mark.asyncio
 async def test_shot_detected_on_mode_transition():
     shots_seen = []
-    client = GaggiaMateClient("192.168.4.253")
+    client = GaggiaMateClient("<device-ip>")
     poller = ShotPoller(client, on_shot=lambda s: shots_seen.append(s) or asyncio.coroutine(lambda: None)())
 
     # Simulate brewing→idle transition
@@ -1646,10 +1646,10 @@ Wants=network-online.target
 
 [Service]
 Type=simple
-User=michael
-WorkingDirectory=/home/michael/gaggia-bot
-EnvironmentFile=/home/michael/gaggia-bot/.env
-ExecStart=/home/michael/gaggia-bot/.venv/bin/python main.py
+User=<username>
+WorkingDirectory=~/gaggia-bot
+EnvironmentFile=~/gaggia-bot/.env
+ExecStart=~/gaggia-bot/.venv/bin/python main.py
 Restart=on-failure
 RestartSec=10
 StandardOutput=journal
@@ -1675,7 +1675,7 @@ echo "Service installed. Check: systemctl status gaggia-bot"
 
 ```bash
 gh repo create gaggia-bot --public --description "GaggiaMate espresso shot intelligence Discord bot" --confirm
-git remote add origin git@github.com:mstals19/gaggia-bot.git  # update with actual username
+git remote add origin git@github.com:<your-github-username>/gaggia-bot.git  # update with actual username
 git push -u origin main
 ```
 

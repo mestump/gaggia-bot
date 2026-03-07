@@ -3,6 +3,8 @@ Unit tests for monitor/fetcher.py — binary SIDX/SLOG parsing + HTTP client.
 """
 import struct
 import asyncio
+
+TEST_HOST = "192.168.1.100"
 from datetime import datetime, timezone
 from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
@@ -115,7 +117,7 @@ def make_slog_binary(samples: list[dict]) -> bytes:
 class TestParseShotIndexBinary:
     def test_parse_returns_list(self):
         from monitor.fetcher import GaggiaMateClient
-        client = GaggiaMateClient("192.168.4.253")
+        client = GaggiaMateClient(TEST_HOST)
         data = make_sidx_binary([
             {"id": 1, "timestamp": 1700000000, "profile_name": "Bloom", "flags": 1},
             {"id": 2, "timestamp": 1700001000, "profile_name": "Turbo", "flags": 3},
@@ -126,7 +128,7 @@ class TestParseShotIndexBinary:
 
     def test_parse_shot_ids(self):
         from monitor.fetcher import GaggiaMateClient
-        client = GaggiaMateClient("192.168.4.253")
+        client = GaggiaMateClient(TEST_HOST)
         data = make_sidx_binary([
             {"id": 42, "timestamp": 1700000000, "profile_name": "X"},
         ])
@@ -135,7 +137,7 @@ class TestParseShotIndexBinary:
 
     def test_parse_timestamp_as_datetime(self):
         from monitor.fetcher import GaggiaMateClient
-        client = GaggiaMateClient("192.168.4.253")
+        client = GaggiaMateClient(TEST_HOST)
         ts = 1700000000
         data = make_sidx_binary([{"id": 1, "timestamp": ts}])
         result = client._parse_shot_index(data)
@@ -144,14 +146,14 @@ class TestParseShotIndexBinary:
 
     def test_parse_profile_name(self):
         from monitor.fetcher import GaggiaMateClient
-        client = GaggiaMateClient("192.168.4.253")
+        client = GaggiaMateClient(TEST_HOST)
         data = make_sidx_binary([{"id": 1, "timestamp": 1700000000, "profile_name": "Bloom & Ramp"}])
         result = client._parse_shot_index(data)
         assert result[0]["profile_name"] == "Bloom & Ramp"
 
     def test_parse_flags_completed(self):
         from monitor.fetcher import GaggiaMateClient
-        client = GaggiaMateClient("192.168.4.253")
+        client = GaggiaMateClient(TEST_HOST)
         data = make_sidx_binary([{"id": 1, "timestamp": 1700000000, "flags": 1}])
         result = client._parse_shot_index(data)
         assert result[0]["flags"]["completed"] is True
@@ -160,7 +162,7 @@ class TestParseShotIndexBinary:
 
     def test_parse_flags_all(self):
         from monitor.fetcher import GaggiaMateClient
-        client = GaggiaMateClient("192.168.4.253")
+        client = GaggiaMateClient(TEST_HOST)
         data = make_sidx_binary([{"id": 1, "timestamp": 1700000000, "flags": 0b111}])
         result = client._parse_shot_index(data)
         assert result[0]["flags"]["completed"] is True
@@ -171,7 +173,7 @@ class TestParseShotIndexBinary:
 class TestParseShotSlogBinary:
     def test_parse_returns_dict_with_datapoints(self):
         from monitor.fetcher import GaggiaMateClient
-        client = GaggiaMateClient("192.168.4.253")
+        client = GaggiaMateClient(TEST_HOST)
         data = make_slog_binary([
             {"t": 0, "ct": 930, "cp": 90, "vf": 150},
             {"t": 250, "ct": 932, "cp": 92, "vf": 160},
@@ -182,14 +184,14 @@ class TestParseShotSlogBinary:
 
     def test_parse_profile_name_from_header(self):
         from monitor.fetcher import GaggiaMateClient
-        client = GaggiaMateClient("192.168.4.253")
+        client = GaggiaMateClient(TEST_HOST)
         data = make_slog_binary([{"t": 0}])
         result = client._parse_shot_slog(data, shot_id=5)
         assert result["profile_name"] == "Test Profile"
 
     def test_parse_pressure_bar(self):
         from monitor.fetcher import GaggiaMateClient
-        client = GaggiaMateClient("192.168.4.253")
+        client = GaggiaMateClient(TEST_HOST)
         # cp=91 → 9.1 bar
         data = make_slog_binary([{"t": 0, "cp": 91}])
         result = client._parse_shot_slog(data, shot_id=5)
@@ -197,7 +199,7 @@ class TestParseShotSlogBinary:
 
     def test_parse_temp_c(self):
         from monitor.fetcher import GaggiaMateClient
-        client = GaggiaMateClient("192.168.4.253")
+        client = GaggiaMateClient(TEST_HOST)
         # ct=935 → 93.5°C
         data = make_slog_binary([{"t": 0, "ct": 935}])
         result = client._parse_shot_slog(data, shot_id=5)
@@ -205,7 +207,7 @@ class TestParseShotSlogBinary:
 
     def test_parse_flow_mls(self):
         from monitor.fetcher import GaggiaMateClient
-        client = GaggiaMateClient("192.168.4.253")
+        client = GaggiaMateClient(TEST_HOST)
         # vf=200 → 2.0 ml/s
         data = make_slog_binary([{"t": 0, "vf": 200}])
         result = client._parse_shot_slog(data, shot_id=5)
@@ -213,7 +215,7 @@ class TestParseShotSlogBinary:
 
     def test_parse_t_ms_and_t_s(self):
         from monitor.fetcher import GaggiaMateClient
-        client = GaggiaMateClient("192.168.4.253")
+        client = GaggiaMateClient(TEST_HOST)
         data = make_slog_binary([{"t": 1000}])
         result = client._parse_shot_slog(data, shot_id=5)
         dp = result["datapoints"][0]
@@ -222,14 +224,14 @@ class TestParseShotSlogBinary:
 
     def test_parse_duration_s(self):
         from monitor.fetcher import GaggiaMateClient
-        client = GaggiaMateClient("192.168.4.253")
+        client = GaggiaMateClient(TEST_HOST)
         data = make_slog_binary([{"t": 0}, {"t": 5000}, {"t": 30000}])
         result = client._parse_shot_slog(data, shot_id=5)
         assert abs(result["duration_s"] - 30.0) < 0.001
 
     def test_parse_shot_id(self):
         from monitor.fetcher import GaggiaMateClient
-        client = GaggiaMateClient("192.168.4.253")
+        client = GaggiaMateClient(TEST_HOST)
         data = make_slog_binary([{"t": 0}])
         result = client._parse_shot_slog(data, shot_id=99)
         assert result["id"] == 99
@@ -239,7 +241,7 @@ class TestGetStatus:
     @pytest.mark.asyncio
     async def test_get_status_returns_dict(self):
         from monitor.fetcher import GaggiaMateClient
-        client = GaggiaMateClient("192.168.4.253")
+        client = GaggiaMateClient(TEST_HOST)
 
         mock_response = AsyncMock()
         mock_response.json = AsyncMock(return_value={"ct": 93.5, "pr": 0.0, "m": 0})
@@ -260,7 +262,7 @@ class TestGetShotIndex:
     @pytest.mark.asyncio
     async def test_get_shot_index_parses_binary(self):
         from monitor.fetcher import GaggiaMateClient
-        client = GaggiaMateClient("192.168.4.253")
+        client = GaggiaMateClient(TEST_HOST)
 
         binary_data = make_sidx_binary([
             {"id": 10, "timestamp": 1700000000, "profile_name": "Bloom"},
@@ -286,7 +288,7 @@ class TestGetShot:
     @pytest.mark.asyncio
     async def test_get_shot_parses_slog(self):
         from monitor.fetcher import GaggiaMateClient
-        client = GaggiaMateClient("192.168.4.253")
+        client = GaggiaMateClient(TEST_HOST)
 
         binary_data = make_slog_binary([
             {"t": 0, "ct": 930, "cp": 90},

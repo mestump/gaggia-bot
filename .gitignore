@@ -9,3 +9,7 @@ __pycache__/
 venv/
 *.egg-info/
 .pytest_cache/
+scripts/auto-resume.sh
+scripts/install-cron.sh
+docs/checkpoint.md
+docs/resume-prompt.md

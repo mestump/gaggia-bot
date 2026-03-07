@@ -5,10 +5,10 @@ Wants=network-online.target
 
 [Service]
 Type=simple
-User=michael
-WorkingDirectory=/home/michael/gaggia-bot
-EnvironmentFile=/home/michael/gaggia-bot/.env
-ExecStart=/home/michael/gaggia-bot/.venv/bin/python main.py
+User=REPLACE_WITH_YOUR_USER
+WorkingDirectory=REPLACE_WITH_INSTALL_PATH
+EnvironmentFile=REPLACE_WITH_INSTALL_PATH/.env
+ExecStart=REPLACE_WITH_INSTALL_PATH/.venv/bin/python main.py
 Restart=on-failure
 RestartSec=10
 StandardOutput=journal
