@@ -3,7 +3,6 @@ from discord.ext import commands
 from discord import ui
 import asyncio
 import logging
-from pathlib import Path
 from bot.embeds import shot_embed
 from grapher.shot_graph import generate_shot_graph
 import db
@@ -203,7 +202,7 @@ class Alerts(commands.Cog):
             return
 
         # Generate graph in thread pool to avoid blocking event loop
-        loop = asyncio.get_event_loop()
+        loop = asyncio.get_running_loop()
         try:
             graph_path = await loop.run_in_executor(None, generate_shot_graph, shot)
         except Exception as e:

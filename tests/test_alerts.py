@@ -5,47 +5,42 @@ from unittest.mock import AsyncMock, MagicMock, patch
 from pathlib import Path
 
 
-@pytest.fixture
-def sample_shot():
-    return {
-        "id": "test-001",
-        "timestamp": "2026-03-07T08:22:00",
-        "duration_s": 28.0,
-        "profile_name": "Trieste v2",
-        "datapoints": []
-    }
-
-
 @pytest.mark.asyncio
-async def test_feedback_modal_valid_score(tmp_path):
-    """FeedbackModal parses valid score and saves to DB."""
-    from bot.cogs.alerts import FeedbackModal
-    import db
+async def test_feedback_modal_on_submit_saves_to_db(tmp_path):
+    """FeedbackModal.on_submit saves valid feedback to DB."""
     import os
-    os.environ.setdefault("DB_PATH", str(tmp_path / "test.db"))
+    os.environ["DB_PATH"] = str(tmp_path / "test.db")
+    import db
+    await db.init_db()
 
-    # We test the parsing logic, not Discord interaction
+    from bot.cogs.alerts import FeedbackModal
     modal = FeedbackModal("shot-123")
-    modal.flavor_score = MagicMock()
-    modal.flavor_score.value = "8"
-    modal.flavor_notes = MagicMock()
-    modal.flavor_notes.value = "sweet"
-    modal.bean_name = MagicMock()
-    modal.bean_name.value = "Ethiopia"
-    modal.roaster = MagicMock()
-    modal.roaster.value = "BB"
-    modal.grind_dose_yield = MagicMock()
-    modal.grind_dose_yield.value = "22 / 18.5 / 37.0"
 
-    # Verify parsing
-    parts = [p.strip() for p in modal.grind_dose_yield.value.replace(",", "/").split("/")]
-    grind = float(parts[0])
-    dose = float(parts[1])
-    yld = float(parts[2])
-    assert grind == 22.0
-    assert dose == 18.5
-    assert yld == 37.0
-    assert int(modal.flavor_score.value) == 8
+    # Mock TextInput values
+    modal.flavor_score = MagicMock(value="8")
+    modal.flavor_notes = MagicMock(value="sweet and chocolatey")
+    modal.bean_name = MagicMock(value="Ethiopia Yirgacheffe")
+    modal.roaster = MagicMock(value="Blue Bottle")
+    modal.grind_dose_yield = MagicMock(value="22 / 18.5 / 37.0")
+
+    # Mock Discord interaction
+    interaction = AsyncMock()
+    interaction.response = AsyncMock()
+    interaction.followup = AsyncMock()
+
+    await modal.on_submit(interaction)
+
+    # Verify saved to DB
+    async with db.get_db() as conn:
+        async with conn.execute("SELECT * FROM feedback WHERE shot_id='shot-123'") as cur:
+            row = await cur.fetchone()
+
+    assert row is not None
+    assert row["flavor_score"] == 8
+    assert row["grind_size"] == 22.0
+    assert row["dose_g"] == 18.5
+    assert row["yield_g"] == 37.0
+    interaction.response.defer.assert_called_once_with(ephemeral=True)
 
 
 @pytest.mark.asyncio
