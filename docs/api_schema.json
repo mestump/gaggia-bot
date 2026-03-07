@@ -1,0 +1,337 @@
+{
+  "audit_date": "2026-03-07",
+  "device_ip": "192.168.4.253",
+  "auth": "none",
+
+  "rest_endpoints": {
+    "GET /api/status": {
+      "content_type": "application/json",
+      "sample_response": {
+        "mode": 0,
+        "tt": 0,
+        "ct": 40.237
+      },
+      "notes": "Minimal snapshot. Only 3 fields: mode (int), target temp, current temp. No pressure or flow. Use WebSocket evt:status for full telemetry."
+    },
+    "GET /api/settings": {
+      "content_type": "application/json",
+      "sample_response": {
+        "startupMode": "standby",
+        "targetSteamTemp": 145,
+        "targetWaterTemp": 80,
+        "homekit": false,
+        "homeAssistant": false,
+        "haUser": "",
+        "haPassword": "",
+        "haIP": "",
+        "haPort": 1883,
+        "haTopic": "homeassistant",
+        "pid": "58.397,1.027,249.055,0",
+        "pumpModelCoeffs": "10.205,5.521",
+        "wifiSsid": "Plexinet",
+        "mdnsName": "gaggimate",
+        "temperatureOffset": "8",
+        "pressureScaling": "16.00",
+        "boilerFillActive": false,
+        "startupFillTime": 5,
+        "steamFillTime": 5,
+        "smartGrindActive": false,
+        "smartGrindMode": 0,
+        "momentaryButtons": false,
+        "brewDelay": 1800,
+        "grindDelay": 1000,
+        "delayAdjust": true,
+        "timezone": "America/New_York",
+        "clock24hFormat": true,
+        "standbyTimeout": 900,
+        "mainBrightness": 16,
+        "standbyBrightness": 8,
+        "standbyBrightnessTimeout": 60,
+        "steamPumpPercentage": 4,
+        "steamPumpCutoff": 2,
+        "themeMode": 0,
+        "sunriseR": 0,
+        "sunriseG": 0,
+        "sunriseB": 255,
+        "sunriseW": 50,
+        "sunriseExtBrightness": 255,
+        "emptyTankDistance": 200,
+        "fullTankDistance": 50,
+        "altRelayFunction": 0,
+        "autowakeupEnabled": false,
+        "autowakeupSchedules": "07:00|1111111"
+      },
+      "notes": "Full machine configuration. Contains WiFi password in plaintext — handle with care."
+    },
+    "GET /api/history/index.bin": {
+      "content_type": "application/octet-stream",
+      "notes": "Binary SIDX format. Contains index of all shot records. NOT gzip-compressed. See sidx_format below.",
+      "sidx_format": {
+        "magic": "SIDX (0x58444953 LE = 0x53494458)",
+        "header_size_bytes": 32,
+        "header_fields": {
+          "0:4": "magic u32 = 0x58444953",
+          "4:6": "version u16 (observed: 1)",
+          "6:8": "record_size u16 (observed: 128)",
+          "8:12": "num_records u32",
+          "12:16": "next_id u32 (same as num_records when no deletions)",
+          "16:32": "padding zeros"
+        },
+        "record_size_bytes": 128,
+        "record_fields": {
+          "0:4": "id u32 — shot sequential ID, used in filename",
+          "4:8": "timestamp u32 — unix epoch seconds",
+          "8:12": "data_size u32 — size of .slog file in bytes",
+          "12:16": "flags u32 — bit 0=completed, bit 1=deleted, bit 2=hasNotes",
+          "16:32": "profile_id char[16] — null-padded ASCII short ID (e.g. '3zT2ydcV9G')",
+          "32:48": "unknown/padding",
+          "48:80": "profile_name char[32] — null-padded ASCII display name (e.g. 'Lucy Adaptive')",
+          "80:128": "padding"
+        },
+        "volume_scale": 10,
+        "volume_field_in_flags_u16_at_byte_12_13": "volume_raw / 10 = ml"
+      },
+      "sample_parsed_records": [
+        {"id": 0, "timestamp": 1771369229, "timestamp_human": "2026-02-17 18:00:29", "data_size": 44945, "profile_id": "adapt", "profile_name": "Adaptive v2"},
+        {"id": 51, "timestamp": 1772914899, "timestamp_human": "2026-03-07 15:21:39", "data_size": 48092, "profile_id": "3zT2ydcV9G", "profile_name": "Lucy Adaptive"}
+      ],
+      "total_shots_observed": 52
+    },
+    "GET /api/history/{id:06d}.slog": {
+      "content_type": "application/octet-stream",
+      "notes": "Shot telemetry file. Binary SHOT format. id is zero-padded to 6 digits (e.g. '000051'). NOT gzip-compressed. See slog_format below.",
+      "url_pattern": "/api/history/{id}.slog where id = str(shot_id).zfill(6)",
+      "slog_format": {
+        "magic": "SHOT (0x544f4853)",
+        "versions_seen": [5],
+        "header_size": {
+          "v1-v4": 128,
+          "v5+": 512
+        },
+        "header_fields_v5": {
+          "0:4": "magic u32",
+          "4": "version u8 (observed: 5)",
+          "5": "fields_byte_count u8 — bytes per sample (observed: 26 = 13 fields * 2 bytes)",
+          "6:8": "header_size u16 (512 for v5)",
+          "8:10": "sample_interval_ms u16 (observed: 250ms)",
+          "12:16": "fields_mask u32 — bitmask of active fields",
+          "16:20": "samples_expected u32 — number of samples (0 = ongoing/incomplete)",
+          "20:24": "final_volume_raw u32",
+          "24:28": "timestamp u32 — unix epoch seconds",
+          "28:60": "profile_id char[32] — null-padded ASCII",
+          "60:108": "profile_name char[48] — null-padded ASCII",
+          "108:110": "volume_raw u16 — final_volume / 10 = ml",
+          "110:458": "phase_transitions — up to 12 phases, 29 bytes each",
+          "458": "num_phases u8",
+          "512+": "sample data"
+        },
+        "phase_transition_struct_29_bytes": {
+          "0:2": "sample_index u16",
+          "2": "phase_number u8",
+          "4:29": "phase_name char[25] — null-padded ASCII"
+        },
+        "fields_bitmask": {
+          "bit_0": {"name": "t", "type": "uint16", "unit": "ms", "transform": "raw * sample_interval_ms"},
+          "bit_1": {"name": "tt", "type": "uint16", "scale": 10, "unit": "°C", "description": "target temperature"},
+          "bit_2": {"name": "ct", "type": "uint16", "scale": 10, "unit": "°C", "description": "current temperature"},
+          "bit_3": {"name": "tp", "type": "uint16", "scale": 10, "unit": "bar", "description": "target pressure"},
+          "bit_4": {"name": "cp", "type": "uint16", "scale": 10, "unit": "bar", "description": "current pressure"},
+          "bit_5": {"name": "fl", "type": "int16", "scale": 100, "unit": "ml/s", "description": "actual flow rate"},
+          "bit_6": {"name": "tf", "type": "int16", "scale": 100, "unit": "ml/s", "description": "target flow"},
+          "bit_7": {"name": "pf", "type": "int16", "scale": 100, "unit": "ml/s", "description": "predicted flow"},
+          "bit_8": {"name": "vf", "type": "int16", "scale": 100, "unit": "ml/s", "description": "volumetric flow"},
+          "bit_9": {"name": "v", "type": "uint16", "scale": 10, "unit": "ml", "description": "volume (scale-based)"},
+          "bit_10": {"name": "ev", "type": "uint16", "scale": 10, "unit": "ml", "description": "estimated volume"},
+          "bit_11": {"name": "pr", "type": "uint16", "scale": 100, "description": "pump ratio"},
+          "bit_12": {"name": "systemInfo", "type": "uint16", "scale": null, "description": "bitmask: bit0=shotStartedVolumetric, bit1=currentlyVolumetric, bit2=bluetoothScaleConnected, bit3=volumetricAvailable, bit4=extendedRecording"}
+        },
+        "fields_mask_v5_example": "0x00001fff (all 13 fields active)",
+        "sample_interval_ms_observed": 250,
+        "phases_observed": ["Prefill", "Fill", "Compressing", "Dripping", "Pressurize", "Extraction"],
+        "sample_shot_51_summary": {
+          "version": 5,
+          "timestamp": "2026-03-07 15:21:39",
+          "profile_id": "3zT2ydcV9G",
+          "profile_name": "Lucy Adaptive",
+          "sample_interval_ms": 250,
+          "num_samples": 188,
+          "duration_s": 46.75,
+          "peak_pressure_bar": 9.2,
+          "avg_pressure_bar": 3.7,
+          "avg_boiler_temp_c": 90.3,
+          "peak_flow_ml_s": 8.0,
+          "first_sample": {"t": 0, "tt": 93.0, "ct": 93.2, "tp": 0.0, "cp": 1.0, "fl": 2.65, "tf": 5.48, "pf": 0.0, "vf": 0.0, "v": 0.0, "ev": 0.0, "pr": 0.5, "systemInfo": 1, "phaseNumber": 0, "phaseName": "Prefill"},
+          "last_sample": {"t": 46750, "tt": 93.0, "ct": 90.0, "tp": 9.5, "cp": 3.5, "fl": 1.8, "tf": 1.8, "pf": 1.83, "vf": 0.0, "v": 0.0, "ev": 61.4, "pr": 0.97, "systemInfo": 1, "phaseNumber": 5, "phaseName": "Extraction"}
+        }
+      }
+    },
+    "GET /api/scales/list": {
+      "content_type": "application/json",
+      "sample_response": [],
+      "notes": "Returns array of available BLE scale devices. Empty when no scales are scanning/connected."
+    },
+    "GET /api/scales/info": {
+      "content_type": "application/json",
+      "sample_response": {"connected": false, "name": "", "uuid": ""},
+      "notes": "Current scale connection status."
+    },
+    "GET /api/scales/connect": {
+      "notes": "POST to connect a scale by UUID. Not probed."
+    },
+    "GET /api/scales/scan": {
+      "notes": "Triggers BLE scan. Not probed."
+    },
+    "GET /api/history/": {
+      "notes": "404 fallback — not a real JSON endpoint. Use /api/history/index.bin instead."
+    },
+    "GET /api/profile": {
+      "notes": "404 fallback — not a real endpoint. Profiles accessed via WebSocket req:profiles:list and req:profiles:load."
+    },
+    "GET /api/profiles": {
+      "notes": "404 fallback — not a real endpoint."
+    },
+    "POST /api/shots/upload": {
+      "notes": "Seen in JS. Upload shot data (Decent format?). Not probed."
+    },
+    "GET /api/ota": {
+      "notes": "OTA update endpoint. Not probed."
+    },
+    "GET /api/core-dump": {
+      "notes": "Crash dump endpoint. Not probed."
+    }
+  },
+
+  "websocket": {
+    "url": "ws://192.168.4.253/ws",
+    "protocol": "JSON text frames",
+    "direction": "bidirectional — device pushes evt:status at ~1Hz; client sends req:* commands",
+    "event_type_field": "tp",
+    "push_events": {
+      "evt:status": {
+        "description": "Machine telemetry, pushed at approximately 1Hz",
+        "fields": {
+          "tp": "string — 'evt:status'",
+          "ct": "float — current boiler temperature (°C)",
+          "tt": "float — target temperature (°C)",
+          "pr": "float — current pressure (bar)",
+          "pt": "float — target pressure (bar)",
+          "fl": "float — current flow rate (ml/s)",
+          "m": "int — machine mode (0=Standby, 1=Brew, 2=Steam, 3=Water, 4=Grind)",
+          "p": "string — selected profile display name",
+          "puid": "string — selected profile ID (short key e.g. '3zT2ydcV9G')",
+          "cp": "bool — pressure capability available",
+          "cd": "bool — dimming capability available",
+          "tw": "float — target weight (g, 0 if not set)",
+          "bta": "bool — volumetric (brew-by-weight) available",
+          "bt": "int — brew target value",
+          "btd": "int — brew target duration (ms)",
+          "led": "bool — LED control available",
+          "gtd": "int — grind target duration (ms)",
+          "gtv": "int — grind target volume (ml)",
+          "gt": "int — grind target type (0=time, 1=volume)",
+          "gact": "int — grind active",
+          "bw": "float — current weight from BLE scale (g)",
+          "cw": "float — current weight",
+          "bc": "bool — BLE scale connected",
+          "process": "object|null — present when shot is active, fields: a=active(bool), e=ended(bool)"
+        },
+        "sample": {
+          "tp": "evt:status",
+          "ct": 38.99,
+          "tt": 0,
+          "pr": 0.001,
+          "fl": 0,
+          "pt": 0,
+          "m": 0,
+          "p": "Lucy Adaptive",
+          "puid": "3zT2ydcV9G",
+          "cp": true,
+          "cd": true,
+          "tw": 38,
+          "bta": 0,
+          "bt": 0,
+          "btd": 101,
+          "led": false,
+          "gtd": 24000,
+          "gtv": 18,
+          "gt": 0,
+          "gact": 0,
+          "bw": 0,
+          "cw": 0,
+          "bc": false
+        }
+      },
+      "evt:autotune-result": {
+        "description": "PID autotune completed result. Not observed in session."
+      },
+      "evt:ota-progress": {
+        "description": "OTA firmware update progress. Not observed in session."
+      }
+    },
+    "request_types": {
+      "req:change-mode": {"fields": {"tp": "req:change-mode", "mode": "int (0-4)"}},
+      "req:process:activate": {"description": "Start a shot"},
+      "req:process:deactivate": {"description": "Stop a shot"},
+      "req:process:clear": {"description": "Clear process state"},
+      "req:profiles:list": {"description": "Get all profiles"},
+      "req:profiles:load": {"fields": {"tp": "req:profiles:load", "id": "string profile_id"}, "description": "Load a specific profile"},
+      "req:profiles:select": {"fields": {"tp": "req:profiles:select", "id": "string profile_id"}},
+      "req:profiles:save": {},
+      "req:profiles:delete": {},
+      "req:profiles:favorite": {},
+      "req:profiles:unfavorite": {},
+      "req:profiles:reorder": {},
+      "req:change-brew-target": {},
+      "req:change-grind-target": {},
+      "req:lower-brew-target": {},
+      "req:raise-brew-target": {},
+      "req:lower-grind-target": {},
+      "req:raise-grind-target": {},
+      "req:lower-temp": {},
+      "req:raise-temp": {},
+      "req:flush:start": {},
+      "req:grind:activate": {},
+      "req:grind:deactivate": {},
+      "req:history:delete": {"fields": {"tp": "req:history:delete", "id": "int shot_id"}},
+      "req:history:notes:get": {"fields": {"tp": "req:history:notes:get", "id": "int shot_id"}},
+      "req:history:notes:save": {"fields": {"tp": "req:history:notes:save", "id": "int shot_id", "notes": "string"}},
+      "req:autotune-start": {},
+      "req:ota-settings": {},
+      "req:ota-start": {}
+    },
+    "request_response_pattern": "Client sends req:* with rid field (UUID), device responds with res:* matching rid",
+    "mode_values": {
+      "0": "Standby — machine is idle",
+      "1": "Brew — brewing espresso",
+      "2": "Steam — steaming",
+      "3": "Water — dispensing water",
+      "4": "Grind — grinding"
+    },
+    "shot_detection_strategy": "Watch evt:status.m field. Shot starts when m transitions to 1 (Brew) with process.a=true. Shot ends when process.e=true or m transitions back to 0. After shot ends, new record appears in /api/history/index.bin."
+  },
+
+  "shot_id_field": "id",
+  "shot_id_type": "integer (sequential u32, zero-padded to 6 digits in filename)",
+  "shot_filename_pattern": "/api/history/{str(id).zfill(6)}.slog",
+
+  "key_fields_for_monitor": {
+    "mode_field_in_ws": "m",
+    "mode_field_mapped_to": "mode (in JS internal state)",
+    "mode_idle_value": 0,
+    "mode_brew_value": 1,
+    "shot_active_field": "process.a (bool in evt:status)",
+    "shot_ended_field": "process.e (bool in evt:status)",
+    "current_temp_field": "ct (°C float)",
+    "current_pressure_field": "pr (bar float)",
+    "current_flow_field": "fl (ml/s float)",
+    "profile_id_field": "puid",
+    "profile_name_field": "p",
+    "slog_time_field": "t (ms, = sample_index * sample_interval_ms)",
+    "slog_time_field_note": "t is in milliseconds; 250ms sample interval observed",
+    "slog_pressure_field": "cp (bar, scale=10)",
+    "slog_flow_field": "fl (ml/s, scale=100, int16)",
+    "slog_temp_field": "ct (°C, scale=10)",
+    "slog_volume_field": "ev (ml, scale=10) — estimated volume; v may be 0 if scale not connected",
+    "profile_has_steps": "No 'steps' array — phases are in slog phase_transitions; profile structure via WebSocket req:profiles:load"
+  }
+}
