@@ -2,15 +2,12 @@ import pytest
 import asyncio
 import json
 from unittest.mock import AsyncMock, MagicMock, patch
-from pathlib import Path
-
 
 @pytest.mark.asyncio
 async def test_feedback_modal_on_submit_saves_to_db(tmp_path):
     """FeedbackModal.on_submit saves valid feedback to DB."""
-    import os
-    os.environ["DB_PATH"] = str(tmp_path / "test.db")
     import db
+    db.DB_PATH = str(tmp_path / "test.db")
     await db.init_db()
 
     from bot.cogs.alerts import FeedbackModal
@@ -40,6 +37,9 @@ async def test_feedback_modal_on_submit_saves_to_db(tmp_path):
     assert row["grind_size"] == 22.0
     assert row["dose_g"] == 18.5
     assert row["yield_g"] == 37.0
+    assert row["flavor_notes"] == "sweet and chocolatey"
+    assert row["bean_name"] == "Ethiopia Yirgacheffe"
+    assert row["roaster"] == "Blue Bottle"
     interaction.response.defer.assert_called_once_with(ephemeral=True)
 
 
