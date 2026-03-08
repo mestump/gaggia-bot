@@ -89,8 +89,8 @@ GaggiaMate WebSocket
        ▼
   ShotPoller (monitor/poller.py)
   ├── detects shot end via process.e flag
-  ├── fetches binary SIDX index (/api/history/index.bin)
-  └── parses binary SLOG file (/api/history/XXXXXX.slog)
+  ├── fetches shot metadata via WS req:history:list
+  └── fetches binary SLOG file (/api/history/XXXXXX.slog) for telemetry
        │
        ▼
   Alerts cog (bot/cogs/alerts.py)
@@ -118,8 +118,7 @@ The bot communicates with GaggiaMate via:
 
 | Endpoint | Format | Used for |
 |----------|--------|----------|
-| `ws://<device>/ws` | JSON events | Real-time status, shot detection |
-| `GET /api/history/index.bin` | Binary (SIDX) | Shot index with IDs and timestamps |
+| `ws://<device>/ws` | JSON events | Real-time status, shot detection, `req:history:list` metadata |
 | `GET /api/history/XXXXXX.slog` | Binary (SLOG) | Per-shot telemetry at 250ms resolution |
 | `GET /api/status` | JSON | Current temp, mode |
 | `PUT /api/profile` | JSON | Apply profile changes |
@@ -135,8 +134,8 @@ gaggia-bot/
 ├── db.py                    # SQLite schema + async context manager
 ├── profile_patcher.py       # safe profile snapshot + patch
 ├── monitor/
-│   ├── fetcher.py           # GaggiaMateClient — binary SIDX/SLOG parser
-│   └── poller.py            # WebSocket listener, shot detection
+│   ├── fetcher.py           # GaggiaMateClient — SLOG binary parser + HTTP client
+│   └── poller.py            # WebSocket listener, shot detection, WS request mux
 ├── grapher/
 │   └── shot_graph.py        # matplotlib 3-panel shot graph
 ├── bot/
@@ -149,6 +148,7 @@ gaggia-bot/
 ├── analysis/
 │   ├── heuristics.py        # extraction diagnosis by tasting note keywords
 │   ├── trends.py            # Pearson correlation trend analysis
+│   ├── shot_transformer.py  # telemetry → AI-friendly summary + compliance metrics
 │   └── llm.py               # Claude Haiku recommendation synthesis
 ├── tests/                   # 50 unit tests
 ├── docs/
@@ -164,7 +164,7 @@ gaggia-bot/
 pytest tests/ -v
 ```
 
-50 tests covering binary parsers, shot detection, graph generation, embed builders, heuristics, trend analysis, recommendation flow, and profile patcher.
+70 tests covering binary parsers, shot detection, WS multiplexing, shot transformer, graph generation, embed builders, heuristics, trend analysis, recommendation flow, and profile patcher.
 
 ## Database Schema
 
@@ -179,6 +179,10 @@ SQLite at `./data/gaggia.db`:
 | `config` | Key-value store (e.g. alert channel ID) |
 
 `feedback.brew_ratio` is a virtual generated column (`yield_g / dose_g`).
+
+## Acknowledgements
+
+The approach used in `analysis/shot_transformer.py` — structuring shot telemetry into per-phase summaries, trimming trailing post-pump artifacts, and computing profile compliance metrics — was inspired by the work of [charleshall888](https://github.com/charleshall888) in [gaggimate-barista](https://github.com/charleshall888/gaggimate-barista). Our implementation is a clean-room reimplementation adapted for this project's data model, but the conceptual framing is his.
 
 ## License
 
