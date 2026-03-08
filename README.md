@@ -182,7 +182,8 @@ SQLite at `./data/gaggia.db`:
 
 ## Acknowledgements
 
-The approach used in `analysis/shot_transformer.py` — structuring shot telemetry into per-phase summaries, trimming trailing post-pump artifacts, and computing profile compliance metrics — was inspired by the work of [charleshall888](https://github.com/charleshall888) in [gaggimate-barista](https://github.com/charleshall888/gaggimate-barista). Our implementation is a clean-room reimplementation adapted for this project's data model, but the conceptual framing is his.
+- [GaggiaMate](https://github.com/jniebuhr/gaggimate) by jniebuhr — the open-source display firmware this bot is built around
+- [charleshall888](https://github.com/charleshall888) — shot telemetry transformation concepts in [gaggimate-barista](https://github.com/charleshall888/gaggimate-barista) inspired the approach in `analysis/shot_transformer.py`
 
 ## License
 
