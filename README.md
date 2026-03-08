@@ -179,3 +179,8 @@ SQLite at `./data/gaggia.db`:
 | `config` | Key-value store (e.g. alert channel ID) |
 
 `feedback.brew_ratio` is a virtual generated column (`yield_g / dose_g`).
+
+## License
+
+Licensed under CC BY-NC-SA 4.0  
+https://creativecommons.org/licenses/by-nc-sa/4.0/
