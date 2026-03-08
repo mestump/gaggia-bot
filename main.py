@@ -75,8 +75,11 @@ async def run():
         except Exception as e:
             logger.error("on_feedback_saved failed for shot %s: %s", shot_id, e)
 
+    commands_cog = bot.get_cog("Commands")
     if alerts_cog and recs_cog:
         alerts_cog.set_feedback_callback(on_feedback_saved)
+        if commands_cog:
+            commands_cog.set_feedback_callback(on_feedback_saved)
     else:
         logger.warning("Could not wire feedback callback — alerts_cog=%s, recs_cog=%s", alerts_cog, recs_cog)
 
