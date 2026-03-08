@@ -4,6 +4,7 @@ from anthropic import AsyncAnthropic
 import config
 from analysis.trends import TrendReport
 from analysis.heuristics import Diagnosis
+from analysis.shot_transformer import transform_shot_for_llm
 
 logger = logging.getLogger(__name__)
 
@@ -15,7 +16,13 @@ SAFETY_LIMITS = {
 }
 
 SYSTEM_PROMPT = """You are an expert barista and coffee scientist advising a home espresso enthusiast.
-You analyze shot data and provide actionable, specific recommendations.
+You analyze shot telemetry and provide actionable, specific recommendations.
+
+Shot data includes:
+- summary: temperature, pressure, flow, and extraction timing statistics
+- compliance: RMSE between actual and target pressure/flow (lower = closer to profile)
+- samples: downsampled timeseries (t_s, temp_c, pressure_bar, flow_ml_s, volume_ml)
+
 Always respond with valid JSON matching this schema:
 {
   "prose": "2-3 paragraphs of friendly, specific advice",
@@ -39,7 +46,7 @@ def _clamp_adjustments(adjustments: list) -> list:
                     "Clamping adjustment %s.%s: delta %.2f exceeds limit %.2f",
                     adj.get("step_name"), field, delta, limit,
                 )
-                continue  # reject, don't clamp to avoid subtle bugs
+                continue  # reject rather than silently clamp
         safe.append(adj)
     return safe
 
@@ -51,6 +58,8 @@ async def generate_recommendation(
     current_profile: dict,
 ) -> dict:
     client = AsyncAnthropic(api_key=config.ANTHROPIC_API_KEY)
+
+    transformed_shots = [transform_shot_for_llm(s) for s in recent_shots[-5:]]
 
     user_content = json.dumps({
         "trend_report": {
@@ -66,7 +75,7 @@ async def generate_recommendation(
             "flags": diagnosis.flags,
             "suggestions": diagnosis.suggestions,
         },
-        "recent_shots": recent_shots[-5:],
+        "recent_shots": transformed_shots,
         "current_profile": current_profile,
     }, indent=2)
 

@@ -65,7 +65,7 @@ class GaggiaMateClient:
                 "target_temp_c":     tt / 10.0,
                 "pressure_bar":      cp / 10.0,
                 "target_pressure_bar": tp / 10.0,
-                "flow_mls":          vf / 100.0,
+                "flow_mls":          pf / 100.0,   # puck flow (actual through-puck flow)
                 "target_flow_mls":   tf / 100.0,
                 "volume_ml":         v / 10.0,
                 "weight_g":          0.0,   # not stored in SLOG

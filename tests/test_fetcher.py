@@ -94,8 +94,8 @@ class TestParseShotSlogBinary:
     def test_parse_flow_mls(self):
         from monitor.fetcher import GaggiaMateClient
         client = GaggiaMateClient(TEST_HOST)
-        # vf=200 → 2.0 ml/s
-        data = make_slog_binary([{"t": 0, "vf": 200}])
+        # pf=200 → 2.0 ml/s (puck flow, not volume flow)
+        data = make_slog_binary([{"t": 0, "pf": 200}])
         result = client._parse_shot_slog(data, shot_id=5)
         assert abs(result["datapoints"][0]["flow_mls"] - 2.0) < 0.001
 
