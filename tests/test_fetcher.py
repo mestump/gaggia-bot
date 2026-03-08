@@ -1,5 +1,5 @@
 """
-Unit tests for monitor/fetcher.py — binary SIDX/SLOG parsing + HTTP client.
+Unit tests for monitor/fetcher.py — binary SLOG parsing + HTTP client.
 """
 import struct
 import asyncio
@@ -13,65 +13,6 @@ import pytest_asyncio
 # ---------------------------------------------------------------------------
 # Helpers to build minimal valid binary blobs
 # ---------------------------------------------------------------------------
-
-def make_sidx_binary(records: list[dict]) -> bytes:
-    """
-    Build a minimal SIDX binary.
-    Header: 32 bytes
-      magic (4s), version (u32), count (u32), reserved (20s)
-    Record: 128 bytes each
-      id (u32), timestamp (u32), data_size (u32), flags (u16), pad (u16=0),
-      profile_id (char[16]), profile_name (char[32]), reserved (68 bytes)
-    """
-    count = len(records)
-    header = struct.pack(
-        "<4sII20s",
-        b"SIDX",
-        1,
-        count,
-        b"\x00" * 20,
-    )
-    assert len(header) == 32
-
-    body = b""
-    for r in records:
-        profile_id = r.get("profile_id", "prof1").encode("utf-8")[:16].ljust(16, b"\x00")
-        profile_name = r.get("profile_name", "Test Profile").encode("utf-8")[:32].ljust(32, b"\x00")
-        rec = struct.pack(
-            "<IIIHHs16s32s68s",
-            r["id"],
-            r["timestamp"],
-            r.get("data_size", 1024),
-            r.get("flags", 1),   # bit0=completed
-            0,                   # padding
-            b"\x00",             # 1 spare byte to get alignment right
-            profile_id,
-            profile_name,
-            b"\x00" * 68,
-        )
-        # struct above is 4+4+4+2+2+1+16+32+68 = 133 bytes — wrong; redo manually
-        body += b""  # placeholder — will be overwritten below
-
-    # Build records manually to be exactly 128 bytes each
-    body = b""
-    for r in records:
-        profile_id_bytes = r.get("profile_id", "prof1").encode("utf-8")[:16].ljust(16, b"\x00")
-        profile_name_bytes = r.get("profile_name", "Test Profile").encode("utf-8")[:32].ljust(32, b"\x00")
-        rec = (
-            struct.pack("<I", r["id"])            # 4  bytes
-            + struct.pack("<I", r["timestamp"])   # 4  bytes
-            + struct.pack("<I", r.get("data_size", 1024))  # 4 bytes
-            + struct.pack("<H", r.get("flags", 1))         # 2 bytes
-            + profile_id_bytes                    # 16 bytes
-            + profile_name_bytes                  # 32 bytes
-            # total so far: 62 bytes; pad to 128
-        )
-        rec += b"\x00" * (128 - len(rec))
-        assert len(rec) == 128, f"Record is {len(rec)} bytes, expected 128"
-        body += rec
-
-    return header + body
-
 
 def make_slog_binary(samples: list[dict]) -> bytes:
     """
@@ -114,62 +55,6 @@ def make_slog_binary(samples: list[dict]) -> bytes:
 # Tests
 # ---------------------------------------------------------------------------
 
-class TestParseShotIndexBinary:
-    def test_parse_returns_list(self):
-        from monitor.fetcher import GaggiaMateClient
-        client = GaggiaMateClient(TEST_HOST)
-        data = make_sidx_binary([
-            {"id": 1, "timestamp": 1700000000, "profile_name": "Bloom", "flags": 1},
-            {"id": 2, "timestamp": 1700001000, "profile_name": "Turbo", "flags": 3},
-        ])
-        result = client._parse_shot_index(data)
-        assert isinstance(result, list)
-        assert len(result) == 2
-
-    def test_parse_shot_ids(self):
-        from monitor.fetcher import GaggiaMateClient
-        client = GaggiaMateClient(TEST_HOST)
-        data = make_sidx_binary([
-            {"id": 42, "timestamp": 1700000000, "profile_name": "X"},
-        ])
-        result = client._parse_shot_index(data)
-        assert result[0]["id"] == 42
-
-    def test_parse_timestamp_as_datetime(self):
-        from monitor.fetcher import GaggiaMateClient
-        client = GaggiaMateClient(TEST_HOST)
-        ts = 1700000000
-        data = make_sidx_binary([{"id": 1, "timestamp": ts}])
-        result = client._parse_shot_index(data)
-        assert isinstance(result[0]["timestamp"], datetime)
-        assert result[0]["timestamp"] == datetime.fromtimestamp(ts, tz=timezone.utc)
-
-    def test_parse_profile_name(self):
-        from monitor.fetcher import GaggiaMateClient
-        client = GaggiaMateClient(TEST_HOST)
-        data = make_sidx_binary([{"id": 1, "timestamp": 1700000000, "profile_name": "Bloom & Ramp"}])
-        result = client._parse_shot_index(data)
-        assert result[0]["profile_name"] == "Bloom & Ramp"
-
-    def test_parse_flags_completed(self):
-        from monitor.fetcher import GaggiaMateClient
-        client = GaggiaMateClient(TEST_HOST)
-        data = make_sidx_binary([{"id": 1, "timestamp": 1700000000, "flags": 1}])
-        result = client._parse_shot_index(data)
-        assert result[0]["flags"]["completed"] is True
-        assert result[0]["flags"]["deleted"] is False
-        assert result[0]["flags"]["hasNotes"] is False
-
-    def test_parse_flags_all(self):
-        from monitor.fetcher import GaggiaMateClient
-        client = GaggiaMateClient(TEST_HOST)
-        data = make_sidx_binary([{"id": 1, "timestamp": 1700000000, "flags": 0b111}])
-        result = client._parse_shot_index(data)
-        assert result[0]["flags"]["completed"] is True
-        assert result[0]["flags"]["deleted"] is True
-        assert result[0]["flags"]["hasNotes"] is True
-
-
 class TestParseShotSlogBinary:
     def test_parse_returns_dict_with_datapoints(self):
         from monitor.fetcher import GaggiaMateClient
@@ -182,12 +67,13 @@ class TestParseShotSlogBinary:
         assert "datapoints" in result
         assert len(result["datapoints"]) == 2
 
-    def test_parse_profile_name_from_header(self):
+    def test_parse_profile_name_empty(self):
+        """profile_name is always empty string — filled later by WS req:history:list."""
         from monitor.fetcher import GaggiaMateClient
         client = GaggiaMateClient(TEST_HOST)
         data = make_slog_binary([{"t": 0}])
         result = client._parse_shot_slog(data, shot_id=5)
-        assert result["profile_name"] == "Test Profile"
+        assert result["profile_name"] == ""
 
     def test_parse_pressure_bar(self):
         from monitor.fetcher import GaggiaMateClient
@@ -256,32 +142,6 @@ class TestGetStatus:
         result = await client.get_status(mock_session)
         assert isinstance(result, dict)
         assert result["ct"] == 93.5
-
-
-class TestGetShotIndex:
-    @pytest.mark.asyncio
-    async def test_get_shot_index_parses_binary(self):
-        from monitor.fetcher import GaggiaMateClient
-        client = GaggiaMateClient(TEST_HOST)
-
-        binary_data = make_sidx_binary([
-            {"id": 10, "timestamp": 1700000000, "profile_name": "Bloom"},
-        ])
-
-        mock_response = AsyncMock()
-        mock_response.read = AsyncMock(return_value=binary_data)
-        mock_response.raise_for_status = MagicMock()
-
-        mock_session = AsyncMock()
-        mock_session.get = MagicMock(return_value=AsyncMock(
-            __aenter__=AsyncMock(return_value=mock_response),
-            __aexit__=AsyncMock(return_value=False),
-        ))
-
-        result = await client.get_shot_index(mock_session)
-        assert len(result) == 1
-        assert result[0]["id"] == 10
-        assert result[0]["profile_name"] == "Bloom"
 
 
 class TestGetShot:

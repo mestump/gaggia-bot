@@ -42,7 +42,7 @@ def generate_shot_graph(
     datapoints = shot_data.get("datapoints", [])
 
     # Build title
-    ts_display = timestamp[:16].replace("T", " ") if timestamp else ""
+    ts_display = str(timestamp)[:16].replace("T", " ") if timestamp else ""
     title = f"{profile_name} — {ts_display} — {duration_s}s"
 
     # Extract series

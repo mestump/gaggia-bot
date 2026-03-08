@@ -43,6 +43,7 @@ def mock_ws_messages(messages: list[str]):
             self._msgs = [FakeMsg(m) for m in msgs]
             self._idx = 0
             self.closed = False
+            self.send_json = AsyncMock()
 
         def __aiter__(self):
             return self
@@ -67,19 +68,10 @@ def mock_ws_messages(messages: list[str]):
 class TestShotDetectedOnProcessEnd:
     @pytest.mark.asyncio
     async def test_shot_detected_when_process_e_true(self):
-        """When process.e becomes True, on_shot should be called."""
+        """When process.e becomes True, _fetch_and_process_shots should be called."""
         from monitor.poller import ShotPoller
 
         on_shot = AsyncMock()
-        mock_shot = {
-            "id": 1,
-            "timestamp": datetime.now(tz=timezone.utc),
-            "duration_s": 28.0,
-            "profile_name": "Test",
-            "datapoints": [],
-        }
-        mock_index = [{"id": 1, "timestamp": datetime.now(tz=timezone.utc), "flags": {"completed": True, "deleted": False, "hasNotes": False}}]
-
         messages = [
             make_status_event(m=1, process={"a": True, "e": False}),   # shot active
             make_status_event(m=1, process={"a": False, "e": True}),   # shot ended
@@ -89,29 +81,18 @@ class TestShotDetectedOnProcessEnd:
 
         poller = ShotPoller(host=TEST_HOST, on_shot=on_shot)
 
-        with patch.object(poller, "_fetch_new_shots", new_callable=AsyncMock) as mock_fetch:
-            with patch.object(poller, "_get_known_ids", return_value={}) as mock_known:
-                await poller._process_ws(ws)
+        with patch.object(poller, "_fetch_and_process_shots", new_callable=AsyncMock) as mock_fetch:
+            await poller._process_ws(ws)
+            await asyncio.sleep(0)  # flush background tasks
 
-        mock_fetch.assert_called_once()
+        mock_fetch.assert_called_once_with(ws)
 
     @pytest.mark.asyncio
-    async def test_on_shot_called_with_shot_data(self):
-        """on_shot callback receives the shot dict returned by fetcher."""
+    async def test_fetch_triggered_on_shot_end(self):
+        """_fetch_and_process_shots is dispatched as a background task on shot end."""
         from monitor.poller import ShotPoller
 
         on_shot = AsyncMock()
-        mock_shot = {
-            "id": 52,
-            "timestamp": datetime.now(tz=timezone.utc),
-            "duration_s": 30.0,
-            "profile_name": "Bloom",
-            "datapoints": [{"t_ms": 0, "t_s": 0.0, "pressure_bar": 9.0, "temp_c": 93.0, "flow_mls": 2.0, "weight_g": 0.0}],
-        }
-        mock_index = [
-            {"id": 52, "timestamp": mock_shot["timestamp"], "flags": {"completed": True, "deleted": False, "hasNotes": False}},
-        ]
-
         messages = [
             make_status_event(m=1, process={"a": False, "e": True}),
         ]
@@ -119,12 +100,11 @@ class TestShotDetectedOnProcessEnd:
 
         poller = ShotPoller(host=TEST_HOST, on_shot=on_shot)
 
-        with patch.object(poller, "_fetch_new_shots", new_callable=AsyncMock) as mock_fetch:
-            mock_fetch.return_value = [mock_shot]
-            with patch.object(poller, "_get_known_ids", return_value=set()):
-                await poller._process_ws(ws)
+        with patch.object(poller, "_fetch_and_process_shots", new_callable=AsyncMock) as mock_fetch:
+            await poller._process_ws(ws)
+            await asyncio.sleep(0)
 
-        on_shot.assert_called_once_with(mock_shot)
+        mock_fetch.assert_called_once()
 
 
 class TestFallbackModeTransition:
@@ -142,10 +122,9 @@ class TestFallbackModeTransition:
 
         poller = ShotPoller(host=TEST_HOST, on_shot=on_shot)
 
-        with patch.object(poller, "_fetch_new_shots", new_callable=AsyncMock) as mock_fetch:
-            mock_fetch.return_value = []
-            with patch.object(poller, "_get_known_ids", return_value=set()):
-                await poller._process_ws(ws)
+        with patch.object(poller, "_fetch_and_process_shots", new_callable=AsyncMock) as mock_fetch:
+            await poller._process_ws(ws)
+            await asyncio.sleep(0)
 
         mock_fetch.assert_called_once()
 
@@ -165,10 +144,9 @@ class TestFallbackModeTransition:
 
         poller = ShotPoller(host=TEST_HOST, on_shot=on_shot)
 
-        with patch.object(poller, "_fetch_new_shots", new_callable=AsyncMock) as mock_fetch:
-            mock_fetch.return_value = []
-            with patch.object(poller, "_get_known_ids", return_value=set()):
-                await poller._process_ws(ws)
+        with patch.object(poller, "_fetch_and_process_shots", new_callable=AsyncMock) as mock_fetch:
+            await poller._process_ws(ws)
+            await asyncio.sleep(0)
 
         mock_fetch.assert_not_called()
 
@@ -190,12 +168,87 @@ class TestFallbackModeTransition:
 
         poller = ShotPoller(host=TEST_HOST, on_shot=on_shot)
 
-        with patch.object(poller, "_fetch_new_shots", new_callable=AsyncMock) as mock_fetch:
-            mock_fetch.return_value = []
-            with patch.object(poller, "_get_known_ids", return_value=set()):
-                await poller._process_ws(ws)
+        with patch.object(poller, "_fetch_and_process_shots", new_callable=AsyncMock) as mock_fetch:
+            await poller._process_ws(ws)
+            await asyncio.sleep(0)
 
         mock_fetch.assert_not_called()
+
+
+class TestWsResponseRouting:
+    @pytest.mark.asyncio
+    async def test_response_message_resolves_pending_future(self):
+        """res:* messages with matching rid should resolve the pending future."""
+        from monitor.poller import ShotPoller
+
+        poller = ShotPoller(host=TEST_HOST, on_shot=AsyncMock())
+        loop = asyncio.get_running_loop()
+
+        rid = "test-rid-123"
+        fut = loop.create_future()
+        poller._pending[rid] = fut
+
+        response = {"tp": "res:history:list", "rid": rid, "history": []}
+        messages = [json.dumps(response)]
+        ws = mock_ws_messages(messages)
+
+        await poller._process_ws(ws)
+
+        assert fut.done()
+        assert fut.result() == response
+
+    @pytest.mark.asyncio
+    async def test_unknown_rid_not_routed(self):
+        """Messages with unknown rid are treated as events, not responses."""
+        from monitor.poller import ShotPoller
+
+        poller = ShotPoller(host=TEST_HOST, on_shot=AsyncMock())
+
+        # A response with a rid that is NOT in _pending — should not crash
+        response = {"tp": "res:history:list", "rid": "unknown-rid", "history": []}
+        messages = [json.dumps(response)]
+        ws = mock_ws_messages(messages)
+
+        # Should complete without error
+        await poller._process_ws(ws)
+
+
+class TestStartupSuppression:
+    @pytest.mark.asyncio
+    async def test_startup_done_set_after_first_fetch(self):
+        """_startup_done becomes True after first successful fetch."""
+        from monitor.poller import ShotPoller
+
+        poller = ShotPoller(host=TEST_HOST, on_shot=AsyncMock())
+        assert poller._startup_done is False
+
+        history_resp = {"tp": "res:history:list", "rid": None, "history": []}
+
+        async def fake_ws_request(ws, tp, params=None, timeout=15.0):
+            return {"history": []}
+
+        with patch.object(poller, "_ws_request", side_effect=fake_ws_request):
+            with patch.object(poller, "_get_known_ids", new_callable=AsyncMock, return_value=set()):
+                ws = mock_ws_messages([])
+                await poller._fetch_and_process_shots(ws)
+
+        assert poller._startup_done is True
+
+    @pytest.mark.asyncio
+    async def test_startup_done_set_even_on_timeout(self):
+        """_startup_done is set True even when ws_request times out."""
+        from monitor.poller import ShotPoller
+
+        poller = ShotPoller(host=TEST_HOST, on_shot=AsyncMock())
+
+        async def fake_ws_request_timeout(ws, tp, params=None, timeout=15.0):
+            raise asyncio.TimeoutError()
+
+        with patch.object(poller, "_ws_request", side_effect=fake_ws_request_timeout):
+            ws = mock_ws_messages([])
+            await poller._fetch_and_process_shots(ws)
+
+        assert poller._startup_done is True
 
 
 class TestGetKnownIds:
@@ -245,7 +298,7 @@ class TestSaveShot:
             mock_get_db.return_value.__aexit__ = AsyncMock(return_value=False)
             await poller._save_shot(shot_data)
 
-        # Verify execute was called (INSERT or INSERT OR IGNORE)
+        # Verify execute was called (INSERT OR IGNORE)
         mock_db.execute.assert_called_once()
         call_args = mock_db.execute.call_args
         sql = call_args[0][0]
