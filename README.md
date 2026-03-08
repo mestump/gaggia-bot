@@ -182,7 +182,7 @@ SQLite at `./data/gaggia.db`:
 
 ## Acknowledgements
 
-- [GaggiaMate](https://github.com/jniebuhr/gaggimate) by jniebuhr — the open-source display firmware this bot is built around
+- [GaggiaMate](https://github.com/jniebuhr/gaggimate) - The incredible project that inspired and enabled this entire thing
 - [charleshall888](https://github.com/charleshall888) — shot telemetry transformation concepts in [gaggimate-barista](https://github.com/charleshall888/gaggimate-barista) inspired the approach in `analysis/shot_transformer.py`
 
 ## License
